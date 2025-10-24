@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sonarr.fullname" . }}
+  labels:
+    {{- include "sonarr.labels" . | nindent 4 }}
+  annotations:
+    {{- include "sonarr.commonAnnotations" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "sonarr.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- include "sonarr.commonAnnotations" . | nindent 8 }}
+      labels:
+        {{- include "sonarr.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "sonarr.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8989
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            # Config directory - needs write access
+            - name: config
+              mountPath: /config
+            {{- if .Values.persistence.tv.enabled }}
+            # TV shows directory
+            - name: tv
+              mountPath: {{ .Values.persistence.tv.mountPath }}
+            {{- end }}
+            {{- if .Values.persistence.downloads.enabled }}
+            # Downloads directory
+            - name: downloads
+              mountPath: {{ .Values.persistence.downloads.mountPath }}
+            {{- end }}
+            # Temporary directories for rootless operation
+            - name: tmp
+              mountPath: /tmp
+            - name: var-tmp
+              mountPath: /var/tmp
+            # Additional volume mounts
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        # Config volume
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "sonarr.configPvcName" . }}
+        {{- if .Values.persistence.tv.enabled }}
+        # TV shows volume
+        - name: tv
+          persistentVolumeClaim:
+            claimName: {{ include "sonarr.tvPvcName" . }}
+        {{- end }}
+        {{- if .Values.persistence.downloads.enabled }}
+        # Downloads volume
+        - name: downloads
+          persistentVolumeClaim:
+            claimName: {{ include "sonarr.downloadsPvcName" . }}
+        {{- end }}
+        # Temporary volumes for rootless operation (emptyDir)
+        - name: tmp
+          emptyDir: {}
+        - name: var-tmp
+          emptyDir: {}
+        # Additional volumes
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,208 @@
+# Default values for sonarr.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Image configuration
+image:
+  repository: lscr.io/linuxserver/sonarr
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# Service account configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Pod security context - OKD/OpenShift compatible
+podSecurityContext:
+  runAsNonRoot: true
+  # OKD will assign a random UID, but we need to ensure it's non-root
+  # Using a high UID that's likely to be available
+  runAsUser: 568
+  runAsGroup: 568
+  fsGroup: 568
+  # Required for OKD/OpenShift security
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container security context - OKD/OpenShift compatible
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 568
+  runAsGroup: 568
+  capabilities:
+    drop:
+      - ALL
+
+# Environment variables for LinuxServer container
+env:
+  # Timezone configuration
+  TZ: "UTC"
+  # User/Group IDs - must match security context
+  PUID: "568"
+  PGID: "568"
+  # Additional environment variables can be added here
+  # UMASK: "002"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8989
+  targetPort: 8989
+  # Additional ports can be configured here if needed
+
+# Ingress configuration (for standard Kubernetes)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: sonarr.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# OpenShift Route configuration (preferred for OKD)
+route:
+  enabled: true
+  host: ""  # Will be auto-generated if empty
+  path: ""
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  annotations:
+    haproxy.router.openshift.io/timeout: "5m"
+
+# Persistent storage configuration
+persistence:
+  # Configuration storage
+  config:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    # Annotations for PVC
+    annotations: {}
+    
+  # TV shows storage
+  tv:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    accessMode: ReadWriteMany  # Allows sharing with other media apps
+    size: 100Gi
+    # Can also use existingClaim instead of creating new PVC
+    existingClaim: ""
+    # Mount path in container
+    mountPath: /tv
+    
+  # Downloads storage
+  downloads:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    accessMode: ReadWriteMany  # Allows sharing with download clients
+    size: 50Gi
+    existingClaim: ""
+    mountPath: /downloads
+
+# Additional volumes and volume mounts
+extraVolumes: []
+# - name: extra-config
+#   configMap:
+#     name: sonarr-extra-config
+
+extraVolumeMounts: []
+# - name: extra-config
+#   mountPath: /extra-config
+#   readOnly: true
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Node selector for pod assignment
+nodeSelector: {}
+
+# Tolerations for pod assignment
+tolerations: []
+
+# Affinity for pod assignment
+affinity: {}
+
+# Pod annotations
+podAnnotations:
+  # OpenShift specific annotations
+  openshift.io/scc: restricted-v2
+
+# Pod labels
+podLabels: {}
+
+# Number of replicas
+replicaCount: 1
+
+# Strategy for updates
+strategy:
+  type: Recreate  # Use Recreate since we're using RWO storage
+
+# Liveness probe configuration
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+# Readiness probe configuration
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Startup probe configuration
+startupProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 30
+
+# NetworkPolicy configuration
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  # Define ingress and egress rules as needed
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
