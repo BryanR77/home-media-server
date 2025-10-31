@@ -1,0 +1,26 @@
+{{- if .Values.shared.media.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-media
+  labels:
+    {{- include "media-stack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: shared-media
+  {{- with .Values.shared.media.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.shared.media.accessMode }}
+  {{- if .Values.shared.media.storageClass }}
+  {{- if (eq "-" .Values.shared.media.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.shared.media.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.shared.media.size }}
+{{- end }}

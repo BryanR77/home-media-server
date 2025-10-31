@@ -1,0 +1,135 @@
+{{- if .Values.sonarr.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "sonarr") | nindent 4 }}
+  annotations:
+    openshift.io/generated-by: "Helm"
+spec:
+  replicas: {{ .Values.sonarr.replicaCount }}
+  strategy:
+    {{- toYaml .Values.sonarr.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "sonarr") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: "Helm"
+        {{- with .Values.sonarr.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "sonarr") | nindent 8 }}
+        {{- with .Values.sonarr.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "sonarr") }}
+      securityContext:
+        {{- toYaml .Values.sonarr.podSecurityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      {{- if .Values.global.paths.sonarr }}
+      initContainers:
+        - name: config-setup
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              CONFIG_FILE="/config/config.xml"
+              URLBASE="{{ trimPrefix "/" .Values.global.paths.sonarr }}"
+              
+              # Create config directory if it doesn't exist
+              mkdir -p /config
+              
+              # If config.xml doesn't exist, create a minimal one
+              if [ ! -f "$CONFIG_FILE" ]; then
+                cat > "$CONFIG_FILE" <<EOF
+              <?xml version="1.0" encoding="utf-8"?>
+              <Config>
+                <UrlBase>$URLBASE</UrlBase>
+              </Config>
+              EOF
+                echo "Created new config.xml with UrlBase=$URLBASE"
+              else
+                # Check if UrlBase exists and update/add it
+                if grep -q "<UrlBase>" "$CONFIG_FILE"; then
+                  # UrlBase exists, update it
+                  sed -i "s|<UrlBase>.*</UrlBase>|<UrlBase>$URLBASE</UrlBase>|" "$CONFIG_FILE"
+                  echo "Updated existing UrlBase to $URLBASE"
+                else
+                  # UrlBase doesn't exist, add it after <Config>
+                  sed -i "s|<Config>|<Config>\n  <UrlBase>$URLBASE</UrlBase>|" "$CONFIG_FILE"
+                  echo "Added UrlBase=$URLBASE to existing config"
+                fi
+              fi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      {{- end }}
+      containers:
+        - name: sonarr
+          securityContext:
+            {{- toYaml .Values.sonarr.securityContext | nindent 12 }}
+          image: "{{ .Values.sonarr.image.repository }}:{{ .Values.sonarr.image.tag }}"
+          imagePullPolicy: {{ .Values.sonarr.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.sonarr.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.sonarr.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.sonarr.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.sonarr.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.sonarr.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            {{- if .Values.sonarr.persistence.media.enabled }}
+            - name: media
+              mountPath: /media
+            {{- end }}
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.sonarr.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}-config
+        {{- if .Values.sonarr.persistence.media.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Values.sonarr.persistence.media.existingClaim }}
+        {{- end }}
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.sonarr.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.sonarr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sonarr.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sonarr.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

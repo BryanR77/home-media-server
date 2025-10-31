@@ -1,0 +1,110 @@
+{{- if .Values.global.route.enabled }}
+---
+{{- if .Values.jellyfin.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "jellyfin") | nindent 4 }}
+  {{- with .Values.global.route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ .Values.global.route.hostname }}
+  path: {{ .Values.global.paths.jellyfin | default "/" }}
+  to:
+    kind: Service
+    name: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- with .Values.global.route.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+---
+{{- if .Values.prowlarr.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "prowlarr") | nindent 4 }}
+  {{- with .Values.global.route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ .Values.global.route.hostname }}
+  path: {{ .Values.global.paths.prowlarr }}
+  to:
+    kind: Service
+    name: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- with .Values.global.route.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+---
+{{- if .Values.sonarr.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "sonarr") | nindent 4 }}
+  {{- with .Values.global.route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ .Values.global.route.hostname }}
+  path: {{ .Values.global.paths.sonarr }}
+  to:
+    kind: Service
+    name: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- with .Values.global.route.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+---
+{{- if .Values.sabnzbd.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "sabnzbd") | nindent 4 }}
+  {{- with .Values.global.route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ .Values.global.route.hostname }}
+  path: {{ .Values.global.paths.sabnzbd }}
+  to:
+    kind: Service
+    name: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- with .Values.global.route.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+{{- end }}

@@ -1,0 +1,100 @@
+{{- if .Values.jellyfin.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "jellyfin") | nindent 4 }}
+  annotations:
+    openshift.io/generated-by: "Helm"
+spec:
+  replicas: {{ .Values.jellyfin.replicaCount }}
+  strategy:
+    {{- toYaml .Values.jellyfin.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "jellyfin") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: "Helm"
+        {{- with .Values.jellyfin.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "jellyfin") | nindent 8 }}
+        {{- with .Values.jellyfin.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "jellyfin") }}
+      securityContext:
+        {{- toYaml .Values.jellyfin.podSecurityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      containers:
+        - name: jellyfin
+          securityContext:
+            {{- toYaml .Values.jellyfin.securityContext | nindent 12 }}
+          image: "{{ .Values.jellyfin.image.repository }}:{{ .Values.jellyfin.image.tag }}"
+          imagePullPolicy: {{ .Values.jellyfin.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.jellyfin.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.jellyfin.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.jellyfin.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.jellyfin.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.jellyfin.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            {{- if .Values.jellyfin.persistence.media.enabled }}
+            - name: media
+              mountPath: /media
+            {{- end }}
+            - name: cache
+              mountPath: /cache
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.jellyfin.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}-config
+        {{- if .Values.jellyfin.persistence.media.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Values.jellyfin.persistence.media.existingClaim }}
+        {{- end }}
+        - name: cache
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.jellyfin.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.jellyfin.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.jellyfin.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.jellyfin.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

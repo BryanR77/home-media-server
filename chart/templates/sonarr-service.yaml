@@ -1,0 +1,17 @@
+{{- if .Values.sonarr.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "sonarr") | nindent 4 }}
+spec:
+  type: {{ .Values.sonarr.service.type }}
+  ports:
+    - port: {{ .Values.sonarr.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "sonarr") | nindent 4 }}
+{{- end }}

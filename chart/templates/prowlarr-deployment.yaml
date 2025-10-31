@@ -1,0 +1,126 @@
+{{- if .Values.prowlarr.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "prowlarr") | nindent 4 }}
+  annotations:
+    openshift.io/generated-by: "Helm"
+spec:
+  replicas: {{ .Values.prowlarr.replicaCount }}
+  strategy:
+    {{- toYaml .Values.prowlarr.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "prowlarr") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: "Helm"
+        {{- with .Values.prowlarr.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "prowlarr") | nindent 8 }}
+        {{- with .Values.prowlarr.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "prowlarr") }}
+      securityContext:
+        {{- toYaml .Values.prowlarr.podSecurityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      {{- if .Values.global.paths.prowlarr }}
+      initContainers:
+        - name: config-setup
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              CONFIG_FILE="/config/config.xml"
+              URLBASE="{{ trimPrefix "/" .Values.global.paths.prowlarr }}"
+              
+              # Create config directory if it doesn't exist
+              mkdir -p /config
+              
+              # If config.xml doesn't exist, create a minimal one
+              if [ ! -f "$CONFIG_FILE" ]; then
+                cat > "$CONFIG_FILE" <<EOF
+              <?xml version="1.0" encoding="utf-8"?>
+              <Config>
+                <UrlBase>$URLBASE</UrlBase>
+              </Config>
+              EOF
+                echo "Created new config.xml with UrlBase=$URLBASE"
+              else
+                # Check if UrlBase exists and update/add it
+                if grep -q "<UrlBase>" "$CONFIG_FILE"; then
+                  # UrlBase exists, update it
+                  sed -i "s|<UrlBase>.*</UrlBase>|<UrlBase>$URLBASE</UrlBase>|" "$CONFIG_FILE"
+                  echo "Updated existing UrlBase to $URLBASE"
+                else
+                  # UrlBase doesn't exist, add it after <Config>
+                  sed -i "s|<Config>|<Config>\n  <UrlBase>$URLBASE</UrlBase>|" "$CONFIG_FILE"
+                  echo "Added UrlBase=$URLBASE to existing config"
+                fi
+              fi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      {{- end }}
+      containers:
+        - name: prowlarr
+          securityContext:
+            {{- toYaml .Values.prowlarr.securityContext | nindent 12 }}
+          image: "{{ .Values.prowlarr.image.repository }}:{{ .Values.prowlarr.image.tag }}"
+          imagePullPolicy: {{ .Values.prowlarr.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.prowlarr.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.prowlarr.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.prowlarr.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.prowlarr.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.prowlarr.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.prowlarr.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}-config
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.prowlarr.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.prowlarr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.prowlarr.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.prowlarr.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

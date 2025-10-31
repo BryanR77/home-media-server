@@ -1,0 +1,31 @@
+{{- if .Values.sabnzbd.enabled }}
+{{- if .Values.sabnzbd.persistence.config.enabled }}
+{{- if not .Values.sabnzbd.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "sabnzbd") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.sabnzbd.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.sabnzbd.persistence.config.accessMode }}
+  {{- if .Values.sabnzbd.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.sabnzbd.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.sabnzbd.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.sabnzbd.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- end }}

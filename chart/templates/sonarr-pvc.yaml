@@ -1,0 +1,31 @@
+{{- if .Values.sonarr.enabled }}
+{{- if .Values.sonarr.persistence.config.enabled }}
+{{- if not .Values.sonarr.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "sonarr") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.sonarr.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.sonarr.persistence.config.accessMode }}
+  {{- if .Values.sonarr.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.sonarr.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.sonarr.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.sonarr.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- end }}

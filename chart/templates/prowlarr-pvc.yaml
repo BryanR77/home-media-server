@@ -1,0 +1,31 @@
+{{- if .Values.prowlarr.enabled }}
+{{- if .Values.prowlarr.persistence.config.enabled }}
+{{- if not .Values.prowlarr.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "prowlarr") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.prowlarr.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.prowlarr.persistence.config.accessMode }}
+  {{- if .Values.prowlarr.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.prowlarr.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.prowlarr.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.prowlarr.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,20 @@
+apiVersion: v2
+name: media-stack
+description: A unified Helm chart for deploying a complete media automation stack (Jellyfin, Sonarr, Prowlarr, SABnzbd) with path-based routing and shared storage
+version: 0.1.0
+type: application
+keywords:
+  - media
+  - jellyfin
+  - sonarr
+  - prowlarr
+  - sabnzbd
+  - arr
+  - plex-alternative
+  - streaming
+home: https://github.com/BryanR77/home-media-server
+sources:
+  - https://github.com/BryanR77/home-media-server
+maintainers:
+  - name: BryanR77
+    url: https://github.com/BryanR77

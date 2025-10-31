@@ -1,0 +1,104 @@
+{{- if .Values.sabnzbd.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "sabnzbd") | nindent 4 }}
+  annotations:
+    openshift.io/generated-by: "Helm"
+spec:
+  replicas: {{ .Values.sabnzbd.replicaCount }}
+  strategy:
+    {{- toYaml .Values.sabnzbd.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "sabnzbd") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: "Helm"
+        {{- with .Values.sabnzbd.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "sabnzbd") | nindent 8 }}
+        {{- with .Values.sabnzbd.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "sabnzbd") }}
+      securityContext:
+        {{- toYaml .Values.sabnzbd.podSecurityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      containers:
+        - name: sabnzbd
+          securityContext:
+            {{- toYaml .Values.sabnzbd.securityContext | nindent 12 }}
+          image: "{{ .Values.sabnzbd.image.repository }}:{{ .Values.sabnzbd.image.tag }}"
+          imagePullPolicy: {{ .Values.sabnzbd.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+            {{- if .Values.global.paths.sabnzbd }}
+            - name: SABNZBD_URL_BASE
+              value: {{ .Values.global.paths.sabnzbd | quote }}
+            {{- end }}
+            {{- if or .Values.global.route.enabled .Values.sabnzbd.hostnameWhitelist }}
+            - name: SABNZBD__HOST_WHITELIST_ENTRIES
+              value: "{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }},{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}.{{ .Release.Namespace }}.svc,{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}.{{ .Release.Namespace }}.svc.cluster.local,localhost,127.0.0.1{{- if .Values.global.route.enabled }},{{ .Values.global.route.hostname }}{{- end }}{{- if .Values.sabnzbd.hostnameWhitelist }},{{ .Values.sabnzbd.hostnameWhitelist }}{{- end }}"
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.sabnzbd.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.sabnzbd.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.sabnzbd.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.sabnzbd.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.sabnzbd.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            {{- if .Values.sabnzbd.persistence.media.enabled }}
+            - name: media
+              mountPath: /media
+            {{- end }}
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.sabnzbd.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}-config
+        {{- if .Values.sabnzbd.persistence.media.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Values.sabnzbd.persistence.media.existingClaim }}
+        {{- end }}
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.sabnzbd.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.sabnzbd.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sabnzbd.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sabnzbd.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
