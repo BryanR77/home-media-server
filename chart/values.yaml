@@ -1,0 +1,436 @@
+# Values for media-stack monolithic chart
+
+# Global settings shared across all applications
+global:
+  timezone: "UTC"
+  
+  # URL paths for each application (used by both ingress and routes)
+  paths:
+    jellyfin: ""          # Root path
+    prowlarr: "/prowlarr"
+    sonarr: "/sonarr"
+    sabnzbd: "/sabnzbd"
+  
+  # Single ingress configuration for all apps
+  ingress:
+    enabled: false
+    className: ""
+    hostname: "media.local"
+    annotations: {}
+    tls: []
+  
+  # OpenShift Route configuration (preferred for OKD)
+  route:
+    enabled: true
+    hostname: "media.local"
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+    annotations:
+      haproxy.router.openshift.io/timeout: "5m"
+
+# Shared storage configuration
+shared:
+  media:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteMany
+    size: 500Gi
+    annotations: {}
+    # This PVC will be mounted by all apps with subdirectories:
+    # /media/downloads - for SABnzbd downloads and Sonarr/Radarr processing
+    # /media/tv - for TV shows (Sonarr -> Jellyfin)
+    # /media/movies - for movies (Radarr -> Jellyfin, if added later)
+    # /media/music - for music (Lidarr -> Jellyfin, if added later)
+
+# Jellyfin - Media Server
+jellyfin:
+  enabled: true
+  
+  image:
+    repository: jellyfin/jellyfin
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    
+  service:
+    type: ClusterIP
+    port: 8096
+    targetPort: 8096
+  
+  persistence:
+    config:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      existingClaim: ""
+      annotations: {}
+
+    media:
+      enabled: true
+      existingClaim: "shared-media"
+      # Mounts the shared media PVC at /media
+
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  startupProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  extraVolumes: []
+  extraVolumeMounts: []
+
+# Prowlarr - Indexer Manager
+prowlarr:
+  enabled: true
+  
+  image:
+    repository: ghcr.io/home-operations/prowlarr
+    tag: "2.1.5"
+    pullPolicy: IfNotPresent
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+    supplementalGroups: []
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    type: ClusterIP
+    port: 9696
+    targetPort: 9696
+  
+  persistence:
+    config:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      existingClaim: ""
+      annotations: {}
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  livenessProbe:
+    httpGet:
+      path: /prowlarr/ping
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /prowlarr/ping
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  startupProbe:
+    httpGet:
+      path: /prowlarr/ping
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  extraVolumes: []
+  extraVolumeMounts: []
+
+# Sonarr - TV Show Management
+sonarr:
+  enabled: true
+  
+  image:
+    repository: ghcr.io/home-operations/sonarr
+    tag: "4.0.16.2942"
+    pullPolicy: IfNotPresent
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+    supplementalGroups: []
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    type: ClusterIP
+    port: 8989
+    targetPort: 8989
+  
+  persistence:
+    config:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      annotations: {}
+      
+    media:
+      enabled: true
+      existingClaim: "shared-media"
+      # Mounts the shared media PVC at /media
+      # Sonarr will use /media/downloads for processing and /media/tv for library
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /sonarr/ping
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /sonarr/ping
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  startupProbe:
+    httpGet:
+      path: /sonarr/ping
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  extraVolumes: []
+  extraVolumeMounts: []
+
+# SABnzbd - Download Client
+sabnzbd:
+  enabled: true
+  
+  image:
+    repository: ghcr.io/home-operations/sabnzbd
+    tag: "4.5.5"
+    pullPolicy: IfNotPresent
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+    supplementalGroups: []
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  
+  # Hostname whitelist configuration for SABnzbd security
+  hostnameWhitelist: ""
+  
+  persistence:
+    config:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      existingClaim: ""
+      
+    media:
+      enabled: true
+      existingClaim: "shared-media"
+      # Mounts the shared media PVC at /media
+      # SABnzbd will download to /media/downloads
+
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /sabnzbd/api?mode=version
+      port: http
+      scheme: HTTP
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /sabnzbd/api?mode=version
+      port: http
+      scheme: HTTP
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+
+  startupProbe:
+    httpGet:
+      path: /sabnzbd/api?mode=version
+      port: http
+      scheme: HTTP
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    successThreshold: 1
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  extraVolumes: []
+  extraVolumeMounts: []
+

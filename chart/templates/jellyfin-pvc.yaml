@@ -1,0 +1,31 @@
+{{- if .Values.jellyfin.enabled }}
+{{- if .Values.jellyfin.persistence.config.enabled }}
+{{- if not .Values.jellyfin.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "jellyfin") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.jellyfin.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.jellyfin.persistence.config.accessMode }}
+  {{- if .Values.jellyfin.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.jellyfin.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.jellyfin.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.jellyfin.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- end }}
