@@ -41,6 +41,25 @@ spec:
         options:
           - name: ndots
             value: "1"
+      {{- if .Values.jellyfin.persistence.media.enabled }}
+      initContainers:
+        - name: init-media-dirs
+          image: "{{ .Values.jellyfin.initContainer.image.repository }}:{{ .Values.jellyfin.initContainer.image.tag }}"
+          imagePullPolicy: {{ .Values.jellyfin.initContainer.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Creating media subdirectories if they don't exist..."
+              mkdir -p /media/downloads /media/tv /media/movies /media/music
+              echo "Directory structure created successfully"
+              ls -la /media/
+          securityContext:
+            {{- toYaml .Values.jellyfin.initContainer.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: media
+              mountPath: /media
+      {{- end }}
       containers:
         - name: jellyfin
           securityContext:

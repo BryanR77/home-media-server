@@ -83,6 +83,19 @@ jellyfin:
     capabilities:
       drop:
         - ALL
+  
+  # Init container to create media subdirectories
+  initContainer:
+    image:
+      repository: busybox
+      tag: "1.36"
+      pullPolicy: IfNotPresent
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      capabilities:
+        drop:
+          - ALL
     
   service:
     type: ClusterIP
@@ -347,7 +360,7 @@ radarr:
   
   image:
     repository: ghcr.io/home-operations/radarr
-    tag: "5.16.8.9565"
+    tag: "6.0.3.10276"
     pullPolicy: IfNotPresent
 
   serviceAccount:
