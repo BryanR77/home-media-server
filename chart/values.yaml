@@ -42,6 +42,17 @@ shared:
     # /media/tv - for TV shows (Sonarr -> Jellyfin)
     # /media/movies - for movies (Radarr -> Jellyfin, if added later)
     # /media/music - for music (Lidarr -> Jellyfin, if added later)
+  
+  # OpenShift/OKD Topology View customization
+  topology:
+    # Custom icons for each application in the topology view
+    icons:
+      jellyfin: "icon-mediaplayer"
+      prowlarr: "icon-search"
+      sonarr: "icon-tv"
+      sabnzbd: "icon-download"
+    # Show connections between apps in topology view
+    showConnections: true
 
 # Jellyfin - Media Server
 jellyfin:

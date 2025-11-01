@@ -7,6 +7,10 @@ metadata:
     {{- include "media-stack.appLabels" (dict "root" . "app" "sabnzbd") | nindent 4 }}
   annotations:
     openshift.io/generated-by: "Helm"
+    {{- if .Values.shared.topology.icons.sabnzbd }}
+    app.openshift.io/runtime: "sabnzbd"
+    app.openshift.io/runtime-icon: {{ .Values.shared.topology.icons.sabnzbd | quote }}
+    {{- end }}
 spec:
   replicas: {{ .Values.sabnzbd.replicaCount }}
   strategy:
