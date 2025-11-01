@@ -9,6 +9,7 @@ global:
     jellyfin: ""          # Root path
     prowlarr: "/prowlarr"
     sonarr: "/sonarr"
+    radarr: "/radarr"
     sabnzbd: "/sabnzbd"
   
   # Single ingress configuration for all apps
@@ -40,7 +41,7 @@ shared:
     # This PVC will be mounted by all apps with subdirectories:
     # /media/downloads - for SABnzbd downloads and Sonarr/Radarr processing
     # /media/tv - for TV shows (Sonarr -> Jellyfin)
-    # /media/movies - for movies (Radarr -> Jellyfin, if added later)
+    # /media/movies - for movies (Radarr -> Jellyfin)
     # /media/music - for music (Lidarr -> Jellyfin, if added later)
   
   # OpenShift/OKD Topology View customization
@@ -50,6 +51,7 @@ shared:
       jellyfin: "icon-mediaplayer"
       prowlarr: "icon-search"
       sonarr: "icon-tv"
+      radarr: "icon-video"
       sabnzbd: "icon-download"
     # Show connections between apps in topology view
     showConnections: true
@@ -319,6 +321,103 @@ sonarr:
   startupProbe:
     httpGet:
       path: /sonarr/ping
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  extraVolumes: []
+  extraVolumeMounts: []
+
+# Radarr - Movie Management
+radarr:
+  enabled: true
+  
+  image:
+    repository: ghcr.io/home-operations/radarr
+    tag: "5.16.8.9565"
+    pullPolicy: IfNotPresent
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+    supplementalGroups: []
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    type: ClusterIP
+    port: 7878
+    targetPort: 7878
+  
+  persistence:
+    config:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      annotations: {}
+      
+    media:
+      enabled: true
+      existingClaim: "shared-media"
+      # Mounts the shared media PVC at /media
+      # Radarr will use /media/downloads for processing and /media/movies for library
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /radarr/ping
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /radarr/ping
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  startupProbe:
+    httpGet:
+      path: /radarr/ping
       port: http
     initialDelaySeconds: 0
     periodSeconds: 5

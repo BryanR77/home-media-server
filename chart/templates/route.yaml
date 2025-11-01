@@ -81,6 +81,33 @@ spec:
   wildcardPolicy: None
 {{- end }}
 ---
+{{- if .Values.radarr.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "radarr") | nindent 4 }}
+  {{- with .Values.global.route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ .Values.global.route.hostname }}
+  path: {{ .Values.global.paths.radarr }}
+  to:
+    kind: Service
+    name: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- with .Values.global.route.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+---
 {{- if .Values.sabnzbd.enabled }}
 apiVersion: route.openshift.io/v1
 kind: Route

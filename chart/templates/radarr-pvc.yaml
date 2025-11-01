@@ -1,0 +1,31 @@
+{{- if .Values.radarr.enabled }}
+{{- if .Values.radarr.persistence.config.enabled }}
+{{- if not .Values.radarr.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "radarr") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.radarr.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.radarr.persistence.config.accessMode }}
+  {{- if .Values.radarr.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.radarr.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.radarr.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.radarr.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- end }}

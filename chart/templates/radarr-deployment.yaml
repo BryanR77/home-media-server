@@ -1,0 +1,142 @@
+{{- if .Values.radarr.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "radarr") | nindent 4 }}
+  annotations:
+    openshift.io/generated-by: "Helm"
+    {{- if .Values.shared.topology.icons.radarr }}
+    app.openshift.io/runtime: "radarr"
+    app.openshift.io/runtime-icon: {{ .Values.shared.topology.icons.radarr | quote }}
+    {{- end }}
+    {{- if .Values.shared.topology.showConnections }}
+    app.openshift.io/connects-to: '[{"apiVersion":"apps/v1","kind":"Deployment","name":"{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}"},{"apiVersion":"apps/v1","kind":"Deployment","name":"{{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}"},{"apiVersion":"apps/v1","kind":"Deployment","name":"{{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}"}]'
+    {{- end }}
+spec:
+  replicas: {{ .Values.radarr.replicaCount }}
+  strategy:
+    {{- toYaml .Values.radarr.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "radarr") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: "Helm"
+        {{- with .Values.radarr.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "radarr") | nindent 8 }}
+        {{- with .Values.radarr.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "radarr") }}
+      securityContext:
+        {{- toYaml .Values.radarr.podSecurityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      {{- if .Values.global.paths.radarr }}
+      initContainers:
+        - name: config-setup
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              CONFIG_FILE="/config/config.xml"
+              URLBASE="{{ trimPrefix "/" .Values.global.paths.radarr }}"
+              
+              # Create config directory if it doesn't exist
+              mkdir -p /config
+              
+              # If config.xml doesn't exist, create a minimal one
+              if [ ! -f "$CONFIG_FILE" ]; then
+                cat > "$CONFIG_FILE" <<EOF
+              <?xml version="1.0" encoding="utf-8"?>
+              <Config>
+                <UrlBase>$URLBASE</UrlBase>
+              </Config>
+              EOF
+                echo "Created new config.xml with UrlBase=$URLBASE"
+              else
+                # Check if UrlBase exists and update/add it
+                if grep -q "<UrlBase>" "$CONFIG_FILE"; then
+                  # UrlBase exists, update it
+                  sed -i "s|<UrlBase>.*</UrlBase>|<UrlBase>$URLBASE</UrlBase>|" "$CONFIG_FILE"
+                  echo "Updated existing UrlBase to $URLBASE"
+                else
+                  # UrlBase doesn't exist, add it after <Config>
+                  sed -i "s|<Config>|<Config>\n  <UrlBase>$URLBASE</UrlBase>|" "$CONFIG_FILE"
+                  echo "Added UrlBase=$URLBASE to existing config"
+                fi
+              fi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      {{- end }}
+      containers:
+        - name: radarr
+          securityContext:
+            {{- toYaml .Values.radarr.securityContext | nindent 12 }}
+          image: "{{ .Values.radarr.image.repository }}:{{ .Values.radarr.image.tag }}"
+          imagePullPolicy: {{ .Values.radarr.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.radarr.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.radarr.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.radarr.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.radarr.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.radarr.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            {{- if .Values.radarr.persistence.media.enabled }}
+            - name: media
+              mountPath: /media
+            {{- end }}
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.radarr.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}-config
+        {{- if .Values.radarr.persistence.media.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Values.radarr.persistence.media.existingClaim }}
+        {{- end }}
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.radarr.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.radarr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.radarr.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.radarr.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
