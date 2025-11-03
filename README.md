@@ -261,7 +261,8 @@ requiredDropCapabilities:
   - SETUID
   - SETGID
 runAsUser:
-  type: RunAsAny
+  # Use namespace-assigned UID range like the default restricted SCC
+  type: MustRunAsRange
 seLinuxContext:
   type: MustRunAs
 supplementalGroups:
@@ -288,6 +289,7 @@ Replace `YOUR_NAMESPACE` with your actual namespace (e.g., `media`). The service
 - `allowHostDirVolumePlugin: true` - Required to mount `/dev/dri` from the host
 - `allowPrivilegeEscalation: false` - Must match the pod's security context
 - `hostPath` in volumes list - Allows hostPath volume type
+- `runAsUser: MustRunAsRange` - Lets OpenShift inject a non-root UID automatically; fixes `runAsNonRoot` errors for images that default to root (e.g., busybox in initContainers)
 - **No seccomp profile** - Custom SCCs in OpenShift don't support seccomp annotations; the runtime default is used
 
 **To apply the SCC:**
@@ -303,6 +305,9 @@ oc apply -f jellyfin-quicksync-scc.yaml
 
 # Verify it was created
 oc get scc jellyfin-quicksync
+
+# If you previously created it with RunAsAny, patch it:
+oc patch scc jellyfin-quicksync --type=merge -p '{"runAsUser":{"type":"MustRunAsRange"},"allowPrivilegeEscalation":false}'
 ```
 
 After the SCC is created, deploy the chart with Quick Sync enabled but SCC creation disabled:

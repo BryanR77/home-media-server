@@ -23,7 +23,9 @@ requiredDropCapabilities:
   - SETUID
   - SETGID
 runAsUser:
-  type: RunAsAny
+  # Use namespace-assigned UID range like the default restricted SCC
+  # This lets OpenShift inject a non-root UID automatically
+  type: MustRunAsRange
 seLinuxContext:
   type: MustRunAs
 supplementalGroups:
