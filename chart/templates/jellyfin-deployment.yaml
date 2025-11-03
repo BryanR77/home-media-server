@@ -67,7 +67,16 @@ spec:
               echo "Directory structure created successfully"
               ls -la /media/
           securityContext:
+            {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
+            # When using Quick Sync, init container must also run as non-root
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            {{- else }}
             {{- toYaml .Values.jellyfin.initContainer.securityContext | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - name: media
               mountPath: /media
