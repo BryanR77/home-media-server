@@ -115,6 +115,13 @@ jellyfin:
       # Create SecurityContextConstraints (requires cluster-admin privileges)
       # Set to false when deploying in namespaced mode or without cluster-admin access
       createSCC: false
+      # Optional scheduling controls when Quick Sync is enabled
+      # Provide node labels of machines with Intel iGPU (/dev/dri)
+      nodeSelector: {}
+      # Optional pod tolerations to land on tainted nodes with iGPU
+      tolerations: []
+      # Optional pod affinity/anti-affinity
+      affinity: {}
     
     # NVIDIA NVENC (requires NVIDIA GPU Operator/device plugin)
     nvidia:
@@ -123,6 +130,11 @@ jellyfin:
       gpuLimit: 1
       # GPU resource name (default: nvidia.com/gpu)
       resourceName: nvidia.com/gpu
+      # Optional scheduling controls when NVIDIA is enabled (usually not required
+      # because requesting GPU resources already pins to GPU nodes)
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
 
   persistence:
     config:

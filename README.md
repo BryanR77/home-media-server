@@ -343,7 +343,7 @@ This will:
 - After enabling hardware acceleration, configure it in Jellyfin's web UI under `Dashboard → Playback → Transcoding`
 - For Intel Quick Sync on OKD/OpenShift, a custom SCC is automatically created by the Helm chart
 - For NVIDIA NVENC, the GPU Operator typically works with the default `restricted-v2` SCC
-- Consider using node selectors or affinity rules to schedule Jellyfin on nodes with the appropriate hardware:
+- When hardware acceleration is enabled, you can pin Jellyfin to nodes with the hardware using the per-acceleration scheduling fields:
 
 ```yaml
 jellyfin:
@@ -351,6 +351,23 @@ jellyfin:
     feature.node.kubernetes.io/gpu.present: "true"
     # Or target a specific node by hostname:
     # kubernetes.io/hostname: "p320-node"
+
+  hardwareAcceleration:
+    intelQuickSync:
+      enabled: true
+      # Use these only when you want to override base scheduling for Quick Sync
+      nodeSelector:
+        kubernetes.io/hostname: "node-with-igpu"
+      tolerations: []
+      affinity: {}
+
+    nvidia:
+      enabled: true
+      # Requesting a GPU pins to GPU nodes automatically; you can still override:
+      nodeSelector:
+        node-role.kubernetes.io/gpu: "true"
+      tolerations: []
+      affinity: {}
 ```
 
 ## Images
