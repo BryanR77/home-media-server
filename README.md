@@ -247,6 +247,7 @@ metadata:
     kubernetes.io/description: "SCC for Jellyfin with Intel Quick Sync hardware acceleration. Allows access to /dev/dri device for transcoding."
 allowHostDirVolumePlugin: true
 allowPrivilegedContainer: false
+allowPrivilegeEscalation: false
 allowedCapabilities: []
 defaultAddCapabilities: []
 fsGroup:
@@ -282,6 +283,27 @@ users:
 ```
 
 Replace `YOUR_NAMESPACE` with your actual namespace (e.g., `media`). The service account name follows the pattern `<release-name>-jellyfin`.
+
+**Key requirements for the SCC:**
+- `allowHostDirVolumePlugin: true` - Required to mount `/dev/dri` from the host
+- `allowPrivilegeEscalation: false` - Must match the pod's security context
+- `hostPath` in volumes list - Allows hostPath volume type
+- **No seccomp profile** - Custom SCCs in OpenShift don't support seccomp annotations; the runtime default is used
+
+**To apply the SCC:**
+
+```bash
+# Save the above YAML to a file
+cat > jellyfin-quicksync-scc.yaml <<'EOF'
+# ... paste the SCC YAML above ...
+EOF
+
+# Apply it (requires cluster-admin privileges)
+oc apply -f jellyfin-quicksync-scc.yaml
+
+# Verify it was created
+oc get scc jellyfin-quicksync
+```
 
 After the SCC is created, deploy the chart with Quick Sync enabled but SCC creation disabled:
 

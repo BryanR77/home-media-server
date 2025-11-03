@@ -9,6 +9,7 @@ metadata:
     kubernetes.io/description: "Custom SCC for Jellyfin with Intel Quick Sync hardware acceleration. Allows access to /dev/dri device for transcoding. Requires cluster-admin privileges."
 allowHostDirVolumePlugin: true
 allowPrivilegedContainer: false
+allowPrivilegeEscalation: false
 allowedCapabilities: []
 defaultAddCapabilities: []
 fsGroup:

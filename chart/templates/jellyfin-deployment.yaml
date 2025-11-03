@@ -37,10 +37,10 @@ spec:
       serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "jellyfin") }}
       securityContext:
         {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
+        # Custom security context for Intel Quick Sync
+        # Seccomp profile is omitted as it's not supported by custom SCCs
         runAsNonRoot: true
         fsGroupChangePolicy: "OnRootMismatch"
-        seccompProfile:
-          type: RuntimeDefault
         # Add video group for /dev/dri access
         {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.videoGroupId }}
         supplementalGroups:
