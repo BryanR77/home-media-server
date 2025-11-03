@@ -71,6 +71,7 @@ spec:
             # When using Quick Sync, init container must also run as non-root
             allowPrivilegeEscalation: false
             runAsNonRoot: true
+            runAsUser: 1000
             capabilities:
               drop:
                 - ALL
