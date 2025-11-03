@@ -1,0 +1,42 @@
+{{- if and .Values.jellyfin.enabled .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}-quicksync
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "jellyfin") | nindent 4 }}
+  annotations:
+    kubernetes.io/description: "Custom SCC for Jellyfin with Intel Quick Sync hardware acceleration. Allows access to /dev/dri device for transcoding."
+allowHostDirVolumePlugin: true
+allowPrivilegedContainer: false
+allowedCapabilities: []
+defaultAddCapabilities: []
+fsGroup:
+  type: RunAsAny
+groups: []
+priority: 10
+readOnlyRootFilesystem: false
+requiredDropCapabilities:
+  - KILL
+  - MKNOD
+  - SETUID
+  - SETGID
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: MustRunAs
+supplementalGroups:
+  type: RunAsAny
+volumes:
+  - configMap
+  - downwardAPI
+  - emptyDir
+  - hostPath
+  - persistentVolumeClaim
+  - projected
+  - secret
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+{{- end }}

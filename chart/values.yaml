@@ -102,6 +102,25 @@ jellyfin:
     port: 8096
     targetPort: 8096
   
+  # Hardware acceleration configuration
+  hardwareAcceleration:
+    # Intel Quick Sync (requires /dev/dri device)
+    intelQuickSync:
+      enabled: false
+      # Device path to mount (typically /dev/dri)
+      devicePath: /dev/dri
+      # Video group GID for /dev/dri access (typically 44 on most Linux systems, 39 on some)
+      # Set to null to auto-detect or override with specific GID
+      videoGroupId: 44
+    
+    # NVIDIA NVENC (requires NVIDIA GPU Operator/device plugin)
+    nvidia:
+      enabled: false
+      # Number of GPUs to request (typically 1)
+      gpuLimit: 1
+      # GPU resource name (default: nvidia.com/gpu)
+      resourceName: nvidia.com/gpu
+
   persistence:
     config:
       enabled: true

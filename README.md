@@ -204,6 +204,64 @@ sonarr:
       readOnly: true
 ```
 
+### Hardware Acceleration for Jellyfin
+
+Jellyfin supports hardware-accelerated transcoding using Intel Quick Sync or NVIDIA NVENC. Both options are disabled by default for compatibility.
+
+**Intel Quick Sync:**
+
+To enable Intel Quick Sync, you need to mount the `/dev/dri` device from the host:
+
+```yaml
+jellyfin:
+  hardwareAcceleration:
+    intelQuickSync:
+      enabled: true
+      devicePath: /dev/dri  # Default path
+      videoGroupId: 44      # Video group GID (44 on most systems, 39 on some)
+```
+
+This will:
+- Mount the `/dev/dri` host device into the container
+- Create a custom Security Context Constraint (SCC) for OpenShift/OKD that allows hostPath access
+- Add the video group to the container for device access
+- Allow Jellyfin to use Intel Quick Sync for hardware transcoding
+
+**For OpenShift/OKD:** The chart automatically creates a custom SCC named `<release>-jellyfin-quicksync` with minimal permissions. No manual SCC configuration is required.
+
+**NVIDIA NVENC:**
+
+To enable NVIDIA GPU acceleration, you must first install the [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html) in your cluster. Then enable:
+
+```yaml
+jellyfin:
+  hardwareAcceleration:
+    nvidia:
+      enabled: true
+      gpuLimit: 1  # Number of GPUs to allocate
+      resourceName: nvidia.com/gpu  # GPU resource name
+```
+
+This will:
+- Request GPU resources from the NVIDIA device plugin
+- Automatically mount NVIDIA device files (`/dev/nvidia0`, `/dev/nvidiactl`, `/dev/nvidia-uvm`)
+- Allow Jellyfin to use NVENC for hardware transcoding
+
+**Important Notes:**
+- Enable only ONE acceleration method at a time (either Quick Sync or NVIDIA, not both)
+- After enabling hardware acceleration, configure it in Jellyfin's web UI under `Dashboard → Playback → Transcoding`
+- For Intel Quick Sync on OKD/OpenShift, a custom SCC is automatically created by the Helm chart
+- For NVIDIA NVENC, the GPU Operator typically works with the default `restricted-v2` SCC
+- Consider using node selectors or affinity rules to schedule Jellyfin on nodes with the appropriate hardware:
+
+```yaml
+jellyfin:
+  nodeSelector:
+    feature.node.kubernetes.io/gpu.present: "true"
+    # Or target a specific node by hostname:
+    # kubernetes.io/hostname: "p320-node"
+```
+
 ## Images
 
 This chart uses:
