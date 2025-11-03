@@ -39,4 +39,6 @@ allowHostIPC: false
 allowHostNetwork: false
 allowHostPID: false
 allowHostPorts: false
+users:
+  - system:serviceaccount:{{ .Release.Namespace }}:{{ include "media-stack.serviceAccountName" (dict "root" . "app" "jellyfin") }}
 {{- end }}
