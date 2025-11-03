@@ -7,6 +7,7 @@ A unified Helm chart for deploying a complete media automation stack on Kubernet
 This chart deploys:
 - **Jellyfin**: Media server and streaming platform
 - **Sonarr**: TV series management and automation
+- **Radarr**: Movie management and automation
 - **Prowlarr**: Indexer manager for *arr apps
 - **SABnzbd**: Usenet download client
 
@@ -14,7 +15,7 @@ This chart deploys:
 
 - **Single Chart**: One `helm install` deploys all applications
 - **Unified Configuration**: All settings in one `values.yaml` file
-- **Shared Storage**: Common downloads PVC for SABnzbd and Sonarr
+- **Shared Storage**: Common downloads PVC for SABnzbd, Sonarr, and Radarr
 - **Path-Based Routing**: Single hostname with different paths per app
 - **Auto-Configuration**: URL bases automatically configured for *arr apps
 - **OKD/OpenShift Ready**: Restrictive security contexts and Routes enabled by default
@@ -48,6 +49,7 @@ global:
     jellyfin: ""          # Root path
     prowlarr: "/prowlarr"
     sonarr: "/sonarr"
+    radarr: "/radarr"
     sabnzbd: "/sabnzbd"
   
   # OpenShift Route (enabled by default for OKD)
@@ -73,9 +75,10 @@ With the default configuration, apps are accessible at:
 - Jellyfin: `https://media.local/`
 - Prowlarr: `https://media.local/prowlarr`
 - Sonarr: `https://media.local/sonarr`
+- Radarr: `https://media.local/radarr`
 - SABnzbd: `https://media.local/sabnzbd`
 
-The *arr apps (Prowlarr, Sonarr) are automatically configured with the correct URL base via initContainers that modify their `config.xml` files on startup. SABnzbd is configured via the `SABNZBD_URL_BASE` environment variable. Jellyfin serves at the root path and requires no special configuration.
+The *arr apps (Prowlarr, Sonarr, Radarr) are automatically configured with the correct URL base via initContainers that modify their `config.xml` files on startup. SABnzbd is configured via the `SABNZBD_URL_BASE` environment variable. Jellyfin serves at the root path and requires no special configuration.
 
 ### Routing Options
 
@@ -109,9 +112,10 @@ shared:
 All apps mount this PVC at `/media` and use subdirectories:
 - **SABnzbd**: Downloads to `/media/downloads`
 - **Sonarr**: Monitors `/media/downloads`, organizes to `/media/tv`
+- **Radarr**: Monitors `/media/downloads`, organizes to `/media/movies`
 - **Jellyfin**: Streams from `/media/tv`, `/media/movies`, etc.
 
-This approach avoids unnecessary file copies - Sonarr can hardlink or move files within the same filesystem, which is instant and doesn't duplicate data.
+This approach avoids unnecessary file copies - Sonarr and Radarr can hardlink or move files within the same filesystem, which is instant and doesn't duplicate data.
 
 **Post-Installation Configuration:**
 
@@ -125,9 +129,13 @@ After deploying, configure each app through its web UI:
    - Root Folder: `/media/tv`
    - Download Client settings should point to `/media/downloads/complete`
 
-3. **Jellyfin** (`Dashboard → Libraries`):
+3. **Radarr** (`Settings → Media Management`):
+   - Root Folder: `/media/movies`
+   - Download Client settings should point to `/media/downloads/complete`
+
+4. **Jellyfin** (`Dashboard → Libraries`):
    - Add library with folder: `/media/tv` for TV shows
-   - Add library with folder: `/media/movies` for movies (if using Radarr)
+   - Add library with folder: `/media/movies` for movies
 
 ### Per-App Configuration
 
@@ -138,7 +146,7 @@ jellyfin:
   enabled: true
   image:
     repository: jellyfin/jellyfin
-    tag: "latest"
+    tag: "10.11.1"
   resources:
     limits:
       cpu: 2000m
@@ -199,9 +207,10 @@ sonarr:
 ## Images
 
 This chart uses:
-- **Jellyfin**: `jellyfin/jellyfin:latest` (official)
+- **Jellyfin**: `jellyfin/jellyfin:10.11.1` (official)
 - **Prowlarr**: `ghcr.io/home-operations/prowlarr:2.1.5`
 - **Sonarr**: `ghcr.io/home-operations/sonarr:4.0.16.2942`
+- **Radarr**: `ghcr.io/home-operations/radarr:6.0.3.10276`
 - **SABnzbd**: `ghcr.io/home-operations/sabnzbd:4.5.5`
 
 The `home-operations` images are community-maintained and rootless-compatible, replacing the archived `onedr0p` images. Specific versions are pinned by default but can be overridden in `values.yaml`.
