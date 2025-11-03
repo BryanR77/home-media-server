@@ -1,4 +1,4 @@
-{{- if and .Values.jellyfin.enabled .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
+{{- if and .Values.jellyfin.enabled .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled .Values.jellyfin.hardwareAcceleration.intelQuickSync.createSCC }}
 apiVersion: security.openshift.io/v1
 kind: SecurityContextConstraints
 metadata:
@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "media-stack.appLabels" (dict "root" . "app" "jellyfin") | nindent 4 }}
   annotations:
-    kubernetes.io/description: "Custom SCC for Jellyfin with Intel Quick Sync hardware acceleration. Allows access to /dev/dri device for transcoding."
+    kubernetes.io/description: "Custom SCC for Jellyfin with Intel Quick Sync hardware acceleration. Allows access to /dev/dri device for transcoding. Requires cluster-admin privileges."
 allowHostDirVolumePlugin: true
 allowPrivilegedContainer: false
 allowedCapabilities: []

@@ -112,6 +112,9 @@ jellyfin:
       # Video group GID for /dev/dri access (typically 44 on most Linux systems, 39 on some)
       # Set to null to auto-detect or override with specific GID
       videoGroupId: 44
+      # Create SecurityContextConstraints (requires cluster-admin privileges)
+      # Set to false when deploying in namespaced mode or without cluster-admin access
+      createSCC: false
     
     # NVIDIA NVENC (requires NVIDIA GPU Operator/device plugin)
     nvidia:

@@ -219,15 +219,79 @@ jellyfin:
       enabled: true
       devicePath: /dev/dri  # Default path
       videoGroupId: 44      # Video group GID (44 on most systems, 39 on some)
+      createSCC: true       # Set to true only if you have cluster-admin privileges
 ```
 
 This will:
 - Mount the `/dev/dri` host device into the container
-- Create a custom Security Context Constraint (SCC) for OpenShift/OKD that allows hostPath access
 - Add the video group to the container for device access
 - Allow Jellyfin to use Intel Quick Sync for hardware transcoding
 
-**For OpenShift/OKD:** The chart automatically creates a custom SCC named `<release>-jellyfin-quicksync` with minimal permissions. No manual SCC configuration is required.
+**For OpenShift/OKD:**
+
+The chart can automatically create a custom SecurityContextConstraints (SCC) for Jellyfin with Intel Quick Sync support. However, **this requires cluster-admin privileges**.
+
+- **If you have cluster-admin access**: Set `createSCC: true` and the chart will create the SCC automatically
+- **If deploying in namespaced mode**: Set `createSCC: false` (default) and ask a cluster admin to create the SCC manually
+
+**Manual SCC Creation (for cluster admins):**
+
+If you don't have cluster-admin privileges or prefer to create the SCC separately, a cluster administrator can apply this SCC:
+
+```yaml
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: jellyfin-quicksync
+  annotations:
+    kubernetes.io/description: "SCC for Jellyfin with Intel Quick Sync hardware acceleration. Allows access to /dev/dri device for transcoding."
+allowHostDirVolumePlugin: true
+allowPrivilegedContainer: false
+allowedCapabilities: []
+defaultAddCapabilities: []
+fsGroup:
+  type: RunAsAny
+groups: []
+priority: 10
+readOnlyRootFilesystem: false
+requiredDropCapabilities:
+  - KILL
+  - MKNOD
+  - SETUID
+  - SETGID
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: MustRunAs
+supplementalGroups:
+  type: RunAsAny
+volumes:
+  - configMap
+  - downwardAPI
+  - emptyDir
+  - hostPath
+  - persistentVolumeClaim
+  - projected
+  - secret
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+users:
+  - system:serviceaccount:YOUR_NAMESPACE:media-stack-jellyfin
+```
+
+Replace `YOUR_NAMESPACE` with your actual namespace (e.g., `media`). The service account name follows the pattern `<release-name>-jellyfin`.
+
+After the SCC is created, deploy the chart with Quick Sync enabled but SCC creation disabled:
+
+```yaml
+jellyfin:
+  hardwareAcceleration:
+    intelQuickSync:
+      enabled: true
+      createSCC: false  # Don't try to create SCC (already exists)
+```
 
 **NVIDIA NVENC:**
 
