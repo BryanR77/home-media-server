@@ -36,7 +36,20 @@ spec:
     spec:
       serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "jellyfin") }}
       securityContext:
+        {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
+        # Custom security context for Intel Quick Sync
+        # Seccomp profile is omitted as it's not supported by custom SCCs
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
+        # Add video group for /dev/dri access
+        {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.videoGroupId }}
+        supplementalGroups:
+          - {{ .Values.jellyfin.hardwareAcceleration.intelQuickSync.videoGroupId }}
+        {{- end }}
+        {{- else }}
         {{- toYaml .Values.jellyfin.podSecurityContext | nindent 8 }}
+        {{- end }}
       dnsConfig:
         options:
           - name: ndots
@@ -55,7 +68,17 @@ spec:
               echo "Directory structure created successfully"
               ls -la /media/
           securityContext:
+            {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
+            # When using Quick Sync, init container must also run as non-root
+            # Let OpenShift assign the UID dynamically from namespace range
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            {{- else }}
             {{- toYaml .Values.jellyfin.initContainer.securityContext | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - name: media
               mountPath: /media
@@ -63,7 +86,18 @@ spec:
       containers:
         - name: jellyfin
           securityContext:
+            {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
+            # Custom security context for Intel Quick Sync /dev/dri access
+            # Let OpenShift assign the UID dynamically from namespace range
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            {{- else }}
             {{- toYaml .Values.jellyfin.securityContext | nindent 12 }}
+            {{- end }}
           image: "{{ .Values.jellyfin.image.repository }}:{{ .Values.jellyfin.image.tag }}"
           imagePullPolicy: {{ .Values.jellyfin.image.pullPolicy }}
           env:
@@ -80,7 +114,24 @@ spec:
           startupProbe:
             {{- toYaml .Values.jellyfin.startupProbe | nindent 12 }}
           resources:
+            {{- if .Values.jellyfin.hardwareAcceleration.nvidia.enabled }}
+            limits:
+              {{ .Values.jellyfin.hardwareAcceleration.nvidia.resourceName }}: {{ .Values.jellyfin.hardwareAcceleration.nvidia.gpuLimit }}
+              {{- with .Values.jellyfin.resources.limits }}
+              {{- if .cpu }}
+              cpu: {{ .cpu }}
+              {{- end }}
+              {{- if .memory }}
+              memory: {{ .memory }}
+              {{- end }}
+              {{- end }}
+            {{- with .Values.jellyfin.resources.requests }}
+            requests:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+            {{- else }}
             {{- toYaml .Values.jellyfin.resources | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - name: config
               mountPath: /config
@@ -92,6 +143,10 @@ spec:
               mountPath: /cache
             - name: tmp
               mountPath: /tmp
+            {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
+            - name: dri
+              mountPath: {{ .Values.jellyfin.hardwareAcceleration.intelQuickSync.devicePath }}
+            {{- end }}
             {{- with .Values.jellyfin.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -108,19 +163,55 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
+        {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
+        - name: dri
+          hostPath:
+            path: {{ .Values.jellyfin.hardwareAcceleration.intelQuickSync.devicePath }}
+        {{- end }}
         {{- with .Values.jellyfin.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- with .Values.jellyfin.nodeSelector }}
+      {{- $iqs := .Values.jellyfin.hardwareAcceleration.intelQuickSync -}}
+      {{- $nv := .Values.jellyfin.hardwareAcceleration.nvidia -}}
+      {{- $baseNS := .Values.jellyfin.nodeSelector -}}
+      {{- $baseAff := .Values.jellyfin.affinity -}}
+      {{- $baseTol := .Values.jellyfin.tolerations -}}
+      {{- if and $iqs.enabled (gt (len $iqs.nodeSelector) 0) }}
+      nodeSelector:
+        {{- toYaml $iqs.nodeSelector | nindent 8 }}
+      {{- else if and $nv.enabled (gt (len $nv.nodeSelector) 0) }}
+      nodeSelector:
+        {{- toYaml $nv.nodeSelector | nindent 8 }}
+      {{- else }}
+      {{- with $baseNS }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.jellyfin.affinity }}
+      {{- end }}
+
+      {{- if and $iqs.enabled (gt (len $iqs.affinity) 0) }}
+      affinity:
+        {{- toYaml $iqs.affinity | nindent 8 }}
+      {{- else if and $nv.enabled (gt (len $nv.affinity) 0) }}
+      affinity:
+        {{- toYaml $nv.affinity | nindent 8 }}
+      {{- else }}
+      {{- with $baseAff }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.jellyfin.tolerations }}
+      {{- end }}
+
+      {{- if and $iqs.enabled (gt (len $iqs.tolerations) 0) }}
+      tolerations:
+        {{- toYaml $iqs.tolerations | nindent 8 }}
+      {{- else if and $nv.enabled (gt (len $nv.tolerations) 0) }}
+      tolerations:
+        {{- toYaml $nv.tolerations | nindent 8 }}
+      {{- else }}
+      {{- with $baseTol }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- end }}
 {{- end }}
