@@ -207,7 +207,7 @@ prowlarr:
   # Subdomain configuration
   ingress:
     subdomain: "prowlarr"
-    basePath: "/prowlarr"
+    basePath: ""
   
   image:
     repository: ghcr.io/home-operations/prowlarr
