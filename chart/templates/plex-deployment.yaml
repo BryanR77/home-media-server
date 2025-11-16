@@ -75,7 +75,7 @@ spec:
             - name: TZ
               value: {{ include "media-stack.timezone" . | quote }}
             {{- if .Values.plex.claimToken }}
-            - name: PLEX_CLAIM
+            - name: PLEX_CLAIM_TOKEN
               value: {{ .Values.plex.claimToken | quote }}
             {{- end }}
             {{- with .Values.plex.extraEnv }}
