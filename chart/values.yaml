@@ -205,6 +205,16 @@ jellyfin:
 plex:
   enabled: true
   
+  # Plex claim token for server registration (optional)
+  # Get your claim token from: https://www.plex.tv/claim/
+  # Token expires after 4 minutes, so use it immediately after generation
+  claimToken: ""
+  
+  # Additional environment variables (optional)
+  extraEnv: []
+  # - name: EXAMPLE_VAR
+  #   value: "example_value"
+  
   # Subdomain configuration
   ingress:
     subdomain: "plex"

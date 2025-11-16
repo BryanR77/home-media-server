@@ -74,6 +74,13 @@ spec:
           env:
             - name: TZ
               value: {{ include "media-stack.timezone" . | quote }}
+            {{- if .Values.plex.claimToken }}
+            - name: PLEX_CLAIM
+              value: {{ .Values.plex.claimToken | quote }}
+            {{- end }}
+            {{- with .Values.plex.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.plex.service.targetPort }}
