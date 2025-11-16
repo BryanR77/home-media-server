@@ -54,35 +54,6 @@ spec:
         options:
           - name: ndots
             value: "1"
-      {{- if .Values.plex.persistence.media.enabled }}
-      initContainers:
-        - name: init-media-dirs
-          image: "{{ .Values.plex.initContainer.image.repository }}:{{ .Values.plex.initContainer.image.tag }}"
-          imagePullPolicy: {{ .Values.plex.initContainer.image.pullPolicy }}
-          command:
-            - sh
-            - -c
-            - |
-              echo "Creating media subdirectories if they don't exist..."
-              mkdir -p /media/downloads /media/tv /media/movies /media/music
-              echo "Directory structure created successfully"
-              ls -la /media/
-          securityContext:
-            {{- if .Values.plex.hardwareAcceleration.intelQuickSync.enabled }}
-            # When using Quick Sync, init container must also run as non-root
-            # Let OpenShift assign the UID dynamically from namespace range
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
-            {{- else }}
-            {{- toYaml .Values.plex.initContainer.securityContext | nindent 12 }}
-            {{- end }}
-          volumeMounts:
-            - name: media
-              mountPath: /media
-      {{- end }}
       containers:
         - name: plex
           securityContext:
@@ -137,10 +108,10 @@ spec:
               mountPath: /config
             {{- if .Values.plex.persistence.media.enabled }}
             - name: media
-              mountPath: /media
+              mountPath: /data
             {{- end }}
-            - name: cache
-              mountPath: /cache
+            - name: transcode
+              mountPath: /transcode
             - name: tmp
               mountPath: /tmp
             {{- if .Values.plex.hardwareAcceleration.intelQuickSync.enabled }}
@@ -159,7 +130,7 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Values.plex.persistence.media.existingClaim }}
         {{- end }}
-        - name: cache
+        - name: transcode
           emptyDir: {}
         - name: tmp
           emptyDir: {}

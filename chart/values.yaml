@@ -211,9 +211,9 @@ plex:
     basePath: ""
   
   image:
-    repository: ghcr.io/home-operations/plex
-    tag: "1.42.2"
-    pullPolicy: Always
+    repository: plexinc/pms-docker
+    tag: "latest"
+    pullPolicy: IfNotPresent
 
   serviceAccount:
     create: true
@@ -234,19 +234,6 @@ plex:
       drop:
         - ALL
   
-  # Init container to create media subdirectories
-  initContainer:
-    image:
-      repository: busybox
-      tag: "1.36"
-      pullPolicy: IfNotPresent
-    securityContext:
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
-      capabilities:
-        drop:
-          - ALL
-    
   service:
     type: ClusterIP
     port: 32400
@@ -298,7 +285,8 @@ plex:
     media:
       enabled: true
       existingClaim: "shared-media"
-      # Mounts the shared media PVC at /media
+      # Mounts the shared media PVC at /data
+      # In Plex, add libraries pointing to /data/movies, /data/tv, /data/music
 
   resources:
     limits:
