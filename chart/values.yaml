@@ -4,26 +4,20 @@
 global:
   timezone: "UTC"
   
-  # URL paths for each application (used by both ingress and routes)
-  paths:
-    jellyfin: ""          # Root path
-    prowlarr: "/prowlarr"
-    sonarr: "/sonarr"
-    radarr: "/radarr"
-    sabnzbd: "/sabnzbd"
+  # Base domain for all subdomains (e.g., media.local)
+  # Individual apps will be accessible at: jellyfin.media.local, sonarr.media.local, etc.
+  baseDomain: "media.local"
   
   # Single ingress configuration for all apps
   ingress:
     enabled: false
     className: ""
-    hostname: "media.local"
     annotations: {}
     tls: []
   
   # OpenShift Route configuration (preferred for OKD)
   route:
     enabled: true
-    hostname: "media.local"
     tls:
       termination: edge
       insecureEdgeTerminationPolicy: Redirect
@@ -59,6 +53,13 @@ shared:
 # Jellyfin - Media Server
 jellyfin:
   enabled: true
+  
+  # Subdomain configuration
+  # When at a subdomain (e.g., jellyfin.media.local), this will be empty string
+  # This allows apps to serve from the root of their subdomain
+  ingress:
+    subdomain: "jellyfin"
+    basePath: ""
   
   image:
     repository: jellyfin/jellyfin
@@ -203,6 +204,11 @@ jellyfin:
 prowlarr:
   enabled: true
   
+  # Subdomain configuration
+  ingress:
+    subdomain: "prowlarr"
+    basePath: "/prowlarr"
+  
   image:
     repository: ghcr.io/home-operations/prowlarr
     tag: "2.1.5"
@@ -294,6 +300,11 @@ prowlarr:
 # Sonarr - TV Show Management
 sonarr:
   enabled: true
+  
+  # Subdomain configuration
+  ingress:
+    subdomain: "sonarr"
+    basePath: "/sonarr"
   
   image:
     repository: ghcr.io/home-operations/sonarr
@@ -392,6 +403,11 @@ sonarr:
 radarr:
   enabled: true
   
+  # Subdomain configuration
+  ingress:
+    subdomain: "radarr"
+    basePath: "/radarr"
+  
   image:
     repository: ghcr.io/home-operations/radarr
     tag: "6.0.3"
@@ -488,6 +504,11 @@ radarr:
 # SABnzbd - Download Client
 sabnzbd:
   enabled: true
+  
+  # Subdomain configuration
+  ingress:
+    subdomain: "sabnzbd"
+    basePath: "/sabnzbd"
   
   image:
     repository: ghcr.io/home-operations/sabnzbd

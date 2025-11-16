@@ -1,6 +1,6 @@
 {{- if .Values.global.route.enabled }}
----
 {{- if .Values.jellyfin.enabled }}
+---
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -12,8 +12,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  host: {{ .Values.global.route.hostname }}
-  path: {{ .Values.global.paths.jellyfin | default "/" }}
+  host: {{ .Values.jellyfin.ingress.subdomain }}.{{ .Values.global.baseDomain }}
   to:
     kind: Service
     name: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}
@@ -26,8 +25,8 @@ spec:
   {{- end }}
   wildcardPolicy: None
 {{- end }}
----
 {{- if .Values.prowlarr.enabled }}
+---
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -39,8 +38,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  host: {{ .Values.global.route.hostname }}
-  path: {{ .Values.global.paths.prowlarr }}
+  host: {{ .Values.prowlarr.ingress.subdomain }}.{{ .Values.global.baseDomain }}
   to:
     kind: Service
     name: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}
@@ -53,8 +51,8 @@ spec:
   {{- end }}
   wildcardPolicy: None
 {{- end }}
----
 {{- if .Values.sonarr.enabled }}
+---
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -66,8 +64,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  host: {{ .Values.global.route.hostname }}
-  path: {{ .Values.global.paths.sonarr }}
+  host: {{ .Values.sonarr.ingress.subdomain }}.{{ .Values.global.baseDomain }}
   to:
     kind: Service
     name: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}
@@ -80,8 +77,8 @@ spec:
   {{- end }}
   wildcardPolicy: None
 {{- end }}
----
 {{- if .Values.radarr.enabled }}
+---
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -93,8 +90,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  host: {{ .Values.global.route.hostname }}
-  path: {{ .Values.global.paths.radarr }}
+  host: {{ .Values.radarr.ingress.subdomain }}.{{ .Values.global.baseDomain }}
   to:
     kind: Service
     name: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}
@@ -107,8 +103,8 @@ spec:
   {{- end }}
   wildcardPolicy: None
 {{- end }}
----
 {{- if .Values.sabnzbd.enabled }}
+---
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -120,8 +116,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  host: {{ .Values.global.route.hostname }}
-  path: {{ .Values.global.paths.sabnzbd }}
+  host: {{ .Values.sabnzbd.ingress.subdomain }}.{{ .Values.global.baseDomain }}
   to:
     kind: Service
     name: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}

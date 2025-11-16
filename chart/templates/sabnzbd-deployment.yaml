@@ -47,13 +47,13 @@ spec:
           env:
             - name: TZ
               value: {{ include "media-stack.timezone" . | quote }}
-            {{- if .Values.global.paths.sabnzbd }}
+            {{- if .Values.sabnzbd.ingress.basePath }}
             - name: SABNZBD_URL_BASE
-              value: {{ .Values.global.paths.sabnzbd | quote }}
+              value: {{ .Values.sabnzbd.ingress.basePath | quote }}
             {{- end }}
             {{- if or .Values.global.route.enabled .Values.sabnzbd.hostnameWhitelist }}
             - name: SABNZBD__HOST_WHITELIST_ENTRIES
-              value: "{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }},{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}.{{ .Release.Namespace }}.svc,{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}.{{ .Release.Namespace }}.svc.cluster.local,localhost,127.0.0.1{{- if .Values.global.route.enabled }},{{ .Values.global.route.hostname }}{{- end }}{{- if .Values.sabnzbd.hostnameWhitelist }},{{ .Values.sabnzbd.hostnameWhitelist }}{{- end }}"
+              value: "{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }},{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}.{{ .Release.Namespace }}.svc,{{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}.{{ .Release.Namespace }}.svc.cluster.local,localhost,127.0.0.1{{- if .Values.global.route.enabled }},{{ .Values.sabnzbd.ingress.subdomain }}.{{ .Values.global.baseDomain }}{{- end }}{{- if .Values.sabnzbd.hostnameWhitelist }},{{ .Values.sabnzbd.hostnameWhitelist }}{{- end }}"
             {{- end }}
           ports:
             - name: http
