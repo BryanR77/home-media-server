@@ -4,26 +4,20 @@
 global:
   timezone: "UTC"
   
-  # URL paths for each application (used by both ingress and routes)
-  paths:
-    jellyfin: ""          # Root path
-    prowlarr: "/prowlarr"
-    sonarr: "/sonarr"
-    radarr: "/radarr"
-    sabnzbd: "/sabnzbd"
+  # Base domain for all subdomains (e.g., media.local)
+  # Individual apps will be accessible at: jellyfin.media.local, sonarr.media.local, etc.
+  baseDomain: "media.local"
   
   # Single ingress configuration for all apps
   ingress:
     enabled: false
     className: ""
-    hostname: "media.local"
     annotations: {}
     tls: []
   
   # OpenShift Route configuration (preferred for OKD)
   route:
     enabled: true
-    hostname: "media.local"
     tls:
       termination: edge
       insecureEdgeTerminationPolicy: Redirect
@@ -59,6 +53,13 @@ shared:
 # Jellyfin - Media Server
 jellyfin:
   enabled: true
+  
+  # Subdomain configuration
+  # When at a subdomain (e.g., jellyfin.media.local), this will be empty string
+  # This allows apps to serve from the root of their subdomain
+  ingress:
+    subdomain: "jellyfin"
+    basePath: ""
   
   image:
     repository: jellyfin/jellyfin
@@ -203,6 +204,11 @@ jellyfin:
 prowlarr:
   enabled: true
   
+  # Subdomain configuration
+  ingress:
+    subdomain: "prowlarr"
+    basePath: ""
+  
   image:
     repository: ghcr.io/home-operations/prowlarr
     tag: "2.1.5"
@@ -294,6 +300,11 @@ prowlarr:
 # Sonarr - TV Show Management
 sonarr:
   enabled: true
+  
+  # Subdomain configuration
+  ingress:
+    subdomain: "sonarr"
+    basePath: ""
   
   image:
     repository: ghcr.io/home-operations/sonarr
@@ -392,6 +403,11 @@ sonarr:
 radarr:
   enabled: true
   
+  # Subdomain configuration
+  ingress:
+    subdomain: "radarr"
+    basePath: ""
+  
   image:
     repository: ghcr.io/home-operations/radarr
     tag: "6.0.3"
@@ -489,6 +505,11 @@ radarr:
 sabnzbd:
   enabled: true
   
+  # Subdomain configuration
+  ingress:
+    subdomain: "sabnzbd"
+    basePath: ""
+  
   image:
     repository: ghcr.io/home-operations/sabnzbd
     tag: "4.5.5"
@@ -538,15 +559,15 @@ sabnzbd:
 
   resources:
     limits:
-      cpu: 2000m
+      cpu: 4000m
       memory: 2Gi
     requests:
-      cpu: 100m
+      cpu: 2000m
       memory: 256Mi
 
   livenessProbe:
     httpGet:
-      path: /sabnzbd/api?mode=version
+      path: /api?mode=version
       port: http
       scheme: HTTP
     initialDelaySeconds: 30
@@ -557,7 +578,7 @@ sabnzbd:
 
   readinessProbe:
     httpGet:
-      path: /sabnzbd/api?mode=version
+      path: /api?mode=version
       port: http
       scheme: HTTP
     initialDelaySeconds: 15
@@ -568,7 +589,7 @@ sabnzbd:
 
   startupProbe:
     httpGet:
-      path: /sabnzbd/api?mode=version
+      path: /api?mode=version
       port: http
       scheme: HTTP
     initialDelaySeconds: 0
@@ -584,10 +605,8 @@ sabnzbd:
   podLabels: {}
   replicaCount: 1
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+     type: Recreate
+     rollingUpdate: null
   extraVolumes: []
   extraVolumeMounts: []
 

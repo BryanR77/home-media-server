@@ -16,8 +16,8 @@ This chart deploys:
 - **Single Chart**: One `helm install` deploys all applications
 - **Unified Configuration**: All settings in one `values.yaml` file
 - **Shared Storage**: Common downloads PVC for SABnzbd, Sonarr, and Radarr
-- **Path-Based Routing**: Single hostname with different paths per app
-- **Auto-Configuration**: URL bases automatically configured for *arr apps
+- **Subdomain-Based Routing**: Each app gets its own subdomain (e.g., jellyfin.media.local, sonarr.media.local)
+- **Auto-Configuration**: URL bases automatically configured for *arr apps when behind a proxy
 - **OKD/OpenShift Ready**: Restrictive security contexts and Routes enabled by default
 - **Centralized Settings**: Timezone and routing configured globally
 
@@ -44,18 +44,11 @@ All apps share these global configurations in `values.yaml`:
 ```yaml
 global:
   timezone: "UTC"
-  
-  paths:
-    jellyfin: ""          # Root path
-    prowlarr: "/prowlarr"
-    sonarr: "/sonarr"
-    radarr: "/radarr"
-    sabnzbd: "/sabnzbd"
+  baseDomain: "media.local"  # Base domain for all subdomains
   
   # OpenShift Route (enabled by default for OKD)
   route:
     enabled: true
-    hostname: "media.local"
     tls:
       termination: edge
       insecureEdgeTerminationPolicy: Redirect
@@ -64,33 +57,33 @@ global:
   ingress:
     enabled: false
     className: ""
-    hostname: "media.local"
     annotations: {}
     tls: []
 ```
 
 ### URL Structure
 
-With the default configuration, apps are accessible at:
-- Jellyfin: `https://media.local/`
-- Prowlarr: `https://media.local/prowlarr`
-- Sonarr: `https://media.local/sonarr`
-- Radarr: `https://media.local/radarr`
-- SABnzbd: `https://media.local/sabnzbd`
+With the default configuration, apps are accessible at their own subdomains:
+- Jellyfin: `https://jellyfin.media.local/`
+- Prowlarr: `https://prowlarr.media.local/`
+- Sonarr: `https://sonarr.media.local/`
+- Radarr: `https://radarr.media.local/`
+- SABnzbd: `https://sabnzbd.media.local/`
 
-The *arr apps (Prowlarr, Sonarr, Radarr) are automatically configured with the correct URL base via initContainers that modify their `config.xml` files on startup. SABnzbd is configured via the `SABNZBD_URL_BASE` environment variable. Jellyfin serves at the root path and requires no special configuration.
+Each application is served from the root of its subdomain. The *arr apps (Prowlarr, Sonarr, Radarr) can optionally be configured with a `basePath` for use behind a reverse proxy with path-based routing. When `basePath` is set, the initContainers will automatically configure the `UrlBase` in their config files.
 
 ### Routing Options
 
 The chart supports two routing methods:
 
 **OpenShift Routes** (default, `global.route.enabled: true`):
-- Native OpenShift/OKD routing with path-based routing
+- Native OpenShift/OKD routing with subdomain-based routing
 - TLS termination at the router
 - Recommended for OKD environments
 
 **Standard Ingress** (alternative, `global.ingress.enabled: true`):
 - Kubernetes-native ingress for standard k8s clusters
+- Creates individual Ingress resources per app (one subdomain per Ingress)
 - Supports custom ingress classes and annotations
 - Use when Routes are not available
 
@@ -137,24 +130,63 @@ After deploying, configure each app through its web UI:
    - Add library with folder: `/media/tv` for TV shows
    - Add library with folder: `/media/movies` for movies
 
-### Per-App Configuration
+**Post-Installation Configuration:**
 
-Each application can be enabled/disabled and configured individually:
+After deploying, configure each app through its web UI:
+
+1. **SABnzbd** (`Settings → Folders`):
+   - Temporary Download Folder: `/media/downloads/incomplete`
+   - Completed Download Folder: `/media/downloads/complete`
+
+2. **Sonarr** (`Settings → Media Management`):
+   - Root Folder: `/media/tv`
+   - Download Client settings should point to `/media/downloads/complete`
+
+3. **Radarr** (`Settings → Media Management`):
+   - Root Folder: `/media/movies`
+   - Download Client settings should point to `/media/downloads/complete`
+
+4. **Jellyfin** (`Dashboard → Libraries`):
+   - Add library with folder: `/media/tv` for TV shows
+   - Add library with folder: `/media/movies` for movies
+
+### Per-App Subdomain Configuration
+
+Each application has its own subdomain and basePath settings:
 
 ```yaml
 jellyfin:
   enabled: true
-  image:
-    repository: jellyfin/jellyfin
-    tag: "10.11.1"
-  resources:
-    limits:
-      cpu: 2000m
-      memory: 2Gi
-  # ... additional settings
+  ingress:
+    subdomain: "jellyfin"      # Accessible at jellyfin.media.local
+    basePath: ""               # No path prefix (serves from /)
+
+sonarr:
+  enabled: true
+  ingress:
+    subdomain: "sonarr"        # Accessible at sonarr.media.local
+    basePath: "/sonarr"        # Optional: path for reverse proxy setups
+
+radarr:
+  enabled: true
+  ingress:
+    subdomain: "radarr"        # Accessible at radarr.media.local
+    basePath: "/radarr"        # Optional: path for reverse proxy setups
+
+prowlarr:
+  enabled: true
+  ingress:
+    subdomain: "prowlarr"      # Accessible at prowlarr.media.local
+    basePath: "/prowlarr"      # Optional: path for reverse proxy setups
+
+sabnzbd:
+  enabled: true
+  ingress:
+    subdomain: "sabnzbd"       # Accessible at sabnzbd.media.local
+    basePath: "/sabnzbd"       # Optional: path for reverse proxy setups
 ```
 
-See `chart/values.yaml` for all available options.
+**Note on `basePath`:** The `basePath` is primarily useful when deploying behind Authentik or another reverse proxy that uses path-based routing. Set it to configure the application's internal URL base. When accessed directly via subdomains without a proxy, the `basePath` values should typically be empty strings.
 
 ### Advanced Configuration
 

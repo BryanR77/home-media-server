@@ -41,7 +41,7 @@ spec:
         options:
           - name: ndots
             value: "1"
-      {{- if .Values.global.paths.radarr }}
+      {{- if .Values.radarr.ingress.basePath }}
       initContainers:
         - name: config-setup
           image: busybox:latest
@@ -50,7 +50,7 @@ spec:
             - -c
             - |
               CONFIG_FILE="/config/config.xml"
-              URLBASE="{{ trimPrefix "/" .Values.global.paths.radarr }}"
+              URLBASE="{{ trimPrefix "/" .Values.radarr.ingress.basePath }}"
               
               # Create config directory if it doesn't exist
               mkdir -p /config
