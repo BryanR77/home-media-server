@@ -25,6 +25,32 @@ spec:
   {{- end }}
   wildcardPolicy: None
 {{- end }}
+{{- if .Values.plex.enabled }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "plex") | nindent 4 }}
+  {{- with .Values.global.route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ .Values.plex.ingress.subdomain }}.{{ .Values.global.baseDomain }}
+  to:
+    kind: Service
+    name: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- with .Values.global.route.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
 {{- if .Values.prowlarr.enabled }}
 ---
 apiVersion: route.openshift.io/v1

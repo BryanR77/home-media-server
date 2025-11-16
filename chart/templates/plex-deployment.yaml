@@ -1,0 +1,217 @@
+{{- if .Values.plex.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "plex") | nindent 4 }}
+  annotations:
+    openshift.io/generated-by: "Helm"
+    {{- if .Values.shared.topology.icons.plex }}
+    app.openshift.io/runtime: "plex"
+    app.openshift.io/runtime-icon: {{ .Values.shared.topology.icons.plex | quote }}
+    {{- end }}
+    {{- if .Values.shared.topology.showConnections }}
+    app.openshift.io/connects-to: '[{"apiVersion":"apps/v1","kind":"Deployment","name":"{{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}"}]'
+    {{- end }}
+spec:
+  replicas: {{ .Values.plex.replicaCount }}
+  strategy:
+    {{- toYaml .Values.plex.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "plex") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        openshift.io/generated-by: "Helm"
+        {{- with .Values.plex.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "plex") | nindent 8 }}
+        {{- with .Values.plex.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "plex") }}
+      securityContext:
+        {{- if .Values.plex.hardwareAcceleration.intelQuickSync.enabled }}
+        # Custom security context for Intel Quick Sync
+        # Seccomp profile is omitted as it's not supported by custom SCCs
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
+        # Add video group for /dev/dri access
+        {{- if .Values.plex.hardwareAcceleration.intelQuickSync.videoGroupId }}
+        supplementalGroups:
+          - {{ .Values.plex.hardwareAcceleration.intelQuickSync.videoGroupId }}
+        {{- end }}
+        {{- else }}
+        {{- toYaml .Values.plex.podSecurityContext | nindent 8 }}
+        {{- end }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      {{- if .Values.plex.persistence.media.enabled }}
+      initContainers:
+        - name: init-media-dirs
+          image: "{{ .Values.plex.initContainer.image.repository }}:{{ .Values.plex.initContainer.image.tag }}"
+          imagePullPolicy: {{ .Values.plex.initContainer.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Creating media subdirectories if they don't exist..."
+              mkdir -p /media/downloads /media/tv /media/movies /media/music
+              echo "Directory structure created successfully"
+              ls -la /media/
+          securityContext:
+            {{- if .Values.plex.hardwareAcceleration.intelQuickSync.enabled }}
+            # When using Quick Sync, init container must also run as non-root
+            # Let OpenShift assign the UID dynamically from namespace range
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            {{- else }}
+            {{- toYaml .Values.plex.initContainer.securityContext | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: media
+              mountPath: /media
+      {{- end }}
+      containers:
+        - name: plex
+          securityContext:
+            {{- if .Values.plex.hardwareAcceleration.intelQuickSync.enabled }}
+            # Custom security context for Intel Quick Sync /dev/dri access
+            # Let OpenShift assign the UID dynamically from namespace range
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+            {{- else }}
+            {{- toYaml .Values.plex.securityContext | nindent 12 }}
+            {{- end }}
+          image: "{{ .Values.plex.image.repository }}:{{ .Values.plex.image.tag }}"
+          imagePullPolicy: {{ .Values.plex.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.plex.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.plex.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.plex.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.plex.startupProbe | nindent 12 }}
+          resources:
+            {{- if .Values.plex.hardwareAcceleration.nvidia.enabled }}
+            limits:
+              {{ .Values.plex.hardwareAcceleration.nvidia.resourceName }}: {{ .Values.plex.hardwareAcceleration.nvidia.gpuLimit }}
+              {{- with .Values.plex.resources.limits }}
+              {{- if .cpu }}
+              cpu: {{ .cpu }}
+              {{- end }}
+              {{- if .memory }}
+              memory: {{ .memory }}
+              {{- end }}
+              {{- end }}
+            {{- with .Values.plex.resources.requests }}
+            requests:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+            {{- else }}
+            {{- toYaml .Values.plex.resources | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            {{- if .Values.plex.persistence.media.enabled }}
+            - name: media
+              mountPath: /media
+            {{- end }}
+            - name: cache
+              mountPath: /cache
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.plex.hardwareAcceleration.intelQuickSync.enabled }}
+            - name: dri
+              mountPath: {{ .Values.plex.hardwareAcceleration.intelQuickSync.devicePath }}
+            {{- end }}
+            {{- with .Values.plex.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}-config
+        {{- if .Values.plex.persistence.media.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Values.plex.persistence.media.existingClaim }}
+        {{- end }}
+        - name: cache
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.plex.hardwareAcceleration.intelQuickSync.enabled }}
+        - name: dri
+          hostPath:
+            path: {{ .Values.plex.hardwareAcceleration.intelQuickSync.devicePath }}
+        {{- end }}
+        {{- with .Values.plex.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- $iqs := .Values.plex.hardwareAcceleration.intelQuickSync -}}
+      {{- $nv := .Values.plex.hardwareAcceleration.nvidia -}}
+      {{- $baseNS := .Values.plex.nodeSelector -}}
+      {{- $baseAff := .Values.plex.affinity -}}
+      {{- $baseTol := .Values.plex.tolerations -}}
+      {{- if and $iqs.enabled (gt (len $iqs.nodeSelector) 0) }}
+      nodeSelector:
+        {{- toYaml $iqs.nodeSelector | nindent 8 }}
+      {{- else if and $nv.enabled (gt (len $nv.nodeSelector) 0) }}
+      nodeSelector:
+        {{- toYaml $nv.nodeSelector | nindent 8 }}
+      {{- else }}
+      {{- with $baseNS }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+
+      {{- if and $iqs.enabled (gt (len $iqs.affinity) 0) }}
+      affinity:
+        {{- toYaml $iqs.affinity | nindent 8 }}
+      {{- else if and $nv.enabled (gt (len $nv.affinity) 0) }}
+      affinity:
+        {{- toYaml $nv.affinity | nindent 8 }}
+      {{- else }}
+      {{- with $baseAff }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+
+      {{- if and $iqs.enabled (gt (len $iqs.tolerations) 0) }}
+      tolerations:
+        {{- toYaml $iqs.tolerations | nindent 8 }}
+      {{- else if and $nv.enabled (gt (len $nv.tolerations) 0) }}
+      tolerations:
+        {{- toYaml $nv.tolerations | nindent 8 }}
+      {{- else }}
+      {{- with $baseTol }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+{{- end }}

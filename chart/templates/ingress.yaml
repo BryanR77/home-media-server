@@ -31,6 +31,38 @@ spec:
                 port:
                   number: {{ .Values.jellyfin.service.port }}
 {{- end }}
+{{- if .Values.plex.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}
+  labels:
+    {{- include "media-stack.labels" . | nindent 4 }}
+  {{- with .Values.global.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.global.ingress.className }}
+  ingressClassName: {{ .Values.global.ingress.className }}
+  {{- end }}
+  {{- if .Values.global.ingress.tls }}
+  tls:
+    {{- toYaml .Values.global.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.plex.ingress.subdomain }}.{{ .Values.global.baseDomain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}
+                port:
+                  number: {{ .Values.plex.service.port }}
+{{- end }}
 {{- if .Values.prowlarr.enabled }}
 ---
 apiVersion: networking.k8s.io/v1

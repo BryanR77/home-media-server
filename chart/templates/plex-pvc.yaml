@@ -1,0 +1,31 @@
+{{- if .Values.plex.enabled }}
+{{- if .Values.plex.persistence.config.enabled }}
+{{- if not .Values.plex.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "plex") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.plex.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.plex.persistence.config.accessMode }}
+  {{- if .Values.plex.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.plex.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.plex.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.plex.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- end }}
