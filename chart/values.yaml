@@ -562,7 +562,7 @@ sabnzbd:
       cpu: 4000m
       memory: 2Gi
     requests:
-      cpu: 500m
+      cpu: 2000m
       memory: 256Mi
 
   livenessProbe:
