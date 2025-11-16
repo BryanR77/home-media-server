@@ -605,10 +605,8 @@ sabnzbd:
   podLabels: {}
   replicaCount: 1
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+     type: Recreate
+     rollingUpdate: null
   extraVolumes: []
   extraVolumeMounts: []
 
