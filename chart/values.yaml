@@ -567,7 +567,7 @@ sabnzbd:
 
   livenessProbe:
     httpGet:
-      path: /sabnzbd/api?mode=version
+      path: /api?mode=version
       port: http
       scheme: HTTP
     initialDelaySeconds: 30
@@ -578,7 +578,7 @@ sabnzbd:
 
   readinessProbe:
     httpGet:
-      path: /sabnzbd/api?mode=version
+      path: /api?mode=version
       port: http
       scheme: HTTP
     initialDelaySeconds: 15
@@ -589,7 +589,7 @@ sabnzbd:
 
   startupProbe:
     httpGet:
-      path: /sabnzbd/api?mode=version
+      path: /api?mode=version
       port: http
       scheme: HTTP
     initialDelaySeconds: 0
