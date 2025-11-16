@@ -304,7 +304,7 @@ sonarr:
   # Subdomain configuration
   ingress:
     subdomain: "sonarr"
-    basePath: "/sonarr"
+    basePath: ""
   
   image:
     repository: ghcr.io/home-operations/sonarr
@@ -406,7 +406,7 @@ radarr:
   # Subdomain configuration
   ingress:
     subdomain: "radarr"
-    basePath: "/radarr"
+    basePath: ""
   
   image:
     repository: ghcr.io/home-operations/radarr
@@ -508,7 +508,7 @@ sabnzbd:
   # Subdomain configuration
   ingress:
     subdomain: "sabnzbd"
-    basePath: "/sabnzbd"
+    basePath: ""
   
   image:
     repository: ghcr.io/home-operations/sabnzbd
@@ -559,10 +559,10 @@ sabnzbd:
 
   resources:
     limits:
-      cpu: 2000m
+      cpu: 4000m
       memory: 2Gi
     requests:
-      cpu: 100m
+      cpu: 500m
       memory: 256Mi
 
   livenessProbe:
