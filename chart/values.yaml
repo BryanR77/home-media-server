@@ -358,7 +358,7 @@ prowlarr:
   
   image:
     repository: ghcr.io/home-operations/prowlarr
-    tag: "2.1.5"
+    tag: "2.3.0"
     pullPolicy: Always
 
   serviceAccount:
@@ -557,7 +557,7 @@ radarr:
   
   image:
     repository: ghcr.io/home-operations/radarr
-    tag: "6.0.3"
+    tag: "6.0.4"
     pullPolicy: Always
 
   serviceAccount:
