@@ -11,9 +11,6 @@ metadata:
     app.openshift.io/runtime: "plex"
     app.openshift.io/runtime-icon: {{ .Values.shared.topology.icons.plex | quote }}
     {{- end }}
-    {{- if .Values.shared.topology.showConnections }}
-    app.openshift.io/connects-to: '[{"apiVersion":"apps/v1","kind":"Deployment","name":"{{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}"}]'
-    {{- end }}
 spec:
   replicas: {{ .Values.plex.replicaCount }}
   strategy:

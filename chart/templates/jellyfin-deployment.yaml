@@ -11,9 +11,6 @@ metadata:
     app.openshift.io/runtime: "jellyfin"
     app.openshift.io/runtime-icon: {{ .Values.shared.topology.icons.jellyfin | quote }}
     {{- end }}
-    {{- if .Values.shared.topology.showConnections }}
-    app.openshift.io/connects-to: '[{"apiVersion":"apps/v1","kind":"Deployment","name":"{{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}"}]'
-    {{- end }}
 spec:
   replicas: {{ .Values.jellyfin.replicaCount }}
   strategy:
