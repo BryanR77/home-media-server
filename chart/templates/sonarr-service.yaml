@@ -5,6 +5,10 @@ metadata:
   name: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}
   labels:
     {{- include "media-stack.appLabels" (dict "root" . "app" "sonarr") | nindent 4 }}
+  {{- with .Values.sonarr.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.sonarr.service.type }}
   ports:

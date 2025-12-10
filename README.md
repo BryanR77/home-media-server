@@ -188,6 +188,43 @@ sabnzbd:
 
 **Note on `basePath`:** The `basePath` is primarily useful when deploying behind Authentik or another reverse proxy that uses path-based routing. Set it to configure the application's internal URL base. When accessed directly via subdomains without a proxy, the `basePath` values should typically be empty strings.
 
+### Authentik / Internal Proxy
+
+- **Disable external Ingress/Route for specific apps:** If you want Authentik's outpost (running inside the cluster) to proxy requests to an application directly, disable that app's ingress so no public Ingress/Route is created. The application's `Service` stays `ClusterIP` and remains reachable inside the cluster by the outpost.
+
+- **Per-app settings (example):**
+
+```yaml
+sonarr:
+  ingress:
+    enabled: false    # don't create an external Ingress/Route for Sonarr
+  service:
+    annotations:
+      internal.authentik.io/expose: "true"  # optional marker for your outpost
+
+radarr:
+  ingress:
+    enabled: false
+  service:
+    annotations: {}
+
+prowlarr:
+  ingress:
+    enabled: false
+  service:
+    annotations: {}
+
+sabnzbd:
+  ingress:
+    enabled: false
+  service:
+    annotations: {}
+```
+
+- **How it works:** The outpost (in-cluster) can reach the services using Kubernetes DNS (e.g., `sonarr.media-stack-sonarr.svc.cluster.local`) or the release-specific service name. The chart keeps services as `ClusterIP` by default, which is precisely what the outpost needs for internal routing. Adding service annotations is optional but useful if you want the outpost to auto-discover targets by annotation.
+
+- **Open-ended by design:** All changes are opt-in. By default `ingress.enabled` is `true` for apps, and `service.annotations` is an empty map — so users not running Authentik are unaffected.
+
 ### Advanced Configuration
 
 **Using Existing PVCs:**

@@ -59,6 +59,7 @@ jellyfin:
   # When at a subdomain (e.g., jellyfin.media.local), this will be empty string
   # This allows apps to serve from the root of their subdomain
   ingress:
+    enabled: true
     subdomain: "jellyfin"
     basePath: ""
   
@@ -100,6 +101,7 @@ jellyfin:
           - ALL
     
   service:
+    annotations: {}
     type: ClusterIP
     port: 8096
     targetPort: 8096
@@ -217,6 +219,7 @@ plex:
   
   # Subdomain configuration
   ingress:
+    enabled: true
     subdomain: "plex"
     basePath: ""
   
@@ -245,6 +248,7 @@ plex:
         - ALL
   
   service:
+    annotations: {}
     type: ClusterIP
     port: 32400
     targetPort: 32400
@@ -353,6 +357,7 @@ prowlarr:
   
   # Subdomain configuration
   ingress:
+    enabled: true
     subdomain: "prowlarr"
     basePath: ""
   
@@ -382,6 +387,7 @@ prowlarr:
         - ALL
 
   service:
+    annotations: {}
     type: ClusterIP
     port: 9696
     targetPort: 9696
@@ -450,6 +456,7 @@ sonarr:
   
   # Subdomain configuration
   ingress:
+    enabled: true
     subdomain: "sonarr"
     basePath: ""
   
@@ -479,6 +486,7 @@ sonarr:
         - ALL
 
   service:
+    annotations: {}
     type: ClusterIP
     port: 8989
     targetPort: 8989
@@ -552,6 +560,7 @@ radarr:
   
   # Subdomain configuration
   ingress:
+    enabled: true
     subdomain: "radarr"
     basePath: ""
   
@@ -581,6 +590,7 @@ radarr:
         - ALL
 
   service:
+    annotations: {}
     type: ClusterIP
     port: 7878
     targetPort: 7878
@@ -654,6 +664,7 @@ sabnzbd:
   
   # Subdomain configuration
   ingress:
+    enabled: true
     subdomain: "sabnzbd"
     basePath: ""
   
@@ -683,6 +694,7 @@ sabnzbd:
         - ALL
 
   service:
+    annotations: {}
     type: ClusterIP
     port: 8080
     targetPort: 8080

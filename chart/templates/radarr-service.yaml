@@ -5,6 +5,10 @@ metadata:
   name: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}
   labels:
     {{- include "media-stack.appLabels" (dict "root" . "app" "radarr") | nindent 4 }}
+  {{- with .Values.radarr.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.radarr.service.type }}
   ports:

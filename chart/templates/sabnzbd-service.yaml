@@ -5,6 +5,10 @@ metadata:
   name: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}
   labels:
     {{- include "media-stack.appLabels" (dict "root" . "app" "sabnzbd") | nindent 4 }}
+  {{- with .Values.sabnzbd.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.sabnzbd.service.type }}
   ports:

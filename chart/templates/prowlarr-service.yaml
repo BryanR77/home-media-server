@@ -5,6 +5,10 @@ metadata:
   name: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}
   labels:
     {{- include "media-stack.appLabels" (dict "root" . "app" "prowlarr") | nindent 4 }}
+  {{- with .Values.prowlarr.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.prowlarr.service.type }}
   ports:

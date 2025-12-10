@@ -1,5 +1,5 @@
 {{- if .Values.global.ingress.enabled }}
-{{- if .Values.jellyfin.enabled }}
+{{- if and .Values.jellyfin.enabled .Values.jellyfin.ingress.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -31,7 +31,7 @@ spec:
                 port:
                   number: {{ .Values.jellyfin.service.port }}
 {{- end }}
-{{- if .Values.plex.enabled }}
+{{- if and .Values.plex.enabled .Values.plex.ingress.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -63,7 +63,7 @@ spec:
                 port:
                   number: {{ .Values.plex.service.port }}
 {{- end }}
-{{- if .Values.prowlarr.enabled }}
+{{- if and .Values.prowlarr.enabled .Values.prowlarr.ingress.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -95,7 +95,7 @@ spec:
                 port:
                   number: {{ .Values.prowlarr.service.port }}
 {{- end }}
-{{- if .Values.sonarr.enabled }}
+{{- if and .Values.sonarr.enabled .Values.sonarr.ingress.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -127,7 +127,7 @@ spec:
                 port:
                   number: {{ .Values.sonarr.service.port }}
 {{- end }}
-{{- if .Values.radarr.enabled }}
+{{- if and .Values.radarr.enabled .Values.radarr.ingress.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -159,7 +159,7 @@ spec:
                 port:
                   number: {{ .Values.radarr.service.port }}
 {{- end }}
-{{- if .Values.sabnzbd.enabled }}
+{{- if and .Values.sabnzbd.enabled .Values.sabnzbd.ingress.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
