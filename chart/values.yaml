@@ -65,7 +65,7 @@ jellyfin:
   
   image:
     repository: jellyfin/jellyfin
-    tag: "10.11.4"
+    tag: "10.11.5"
     pullPolicy: IfNotPresent
 
   serviceAccount:
@@ -363,7 +363,7 @@ prowlarr:
   
   image:
     repository: ghcr.io/home-operations/prowlarr
-    tag: "2.3.0"
+    tag: "2.3.1"
     pullPolicy: Always
 
   serviceAccount:
