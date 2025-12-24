@@ -196,10 +196,7 @@ jellyfin:
   podLabels: {}
   replicaCount: 1
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    type: Recreate
   extraVolumes: []
   extraVolumeMounts: []
 
@@ -344,10 +341,7 @@ plex:
   podLabels: {}
   replicaCount: 1
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    type: Recreate
   extraVolumes: []
   extraVolumeMounts: []
 
