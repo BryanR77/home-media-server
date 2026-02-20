@@ -222,7 +222,7 @@ plex:
   
   image:
     repository: ghcr.io/home-operations/plex
-    tag: "1.42.2"
+    tag: "1.43.0"
     pullPolicy: Always
 
   serviceAccount:
