@@ -69,6 +69,9 @@ jellyfin:
 
   podSecurityContext:
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
     fsGroupChangePolicy: "OnRootMismatch"
     seccompProfile:
       type: RuntimeDefault
@@ -77,10 +80,12 @@ jellyfin:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
     capabilities:
       drop:
         - ALL
-  
+
   # Init container to create media subdirectories
   initContainer:
     image:
@@ -360,6 +365,9 @@ prowlarr:
 
   podSecurityContext:
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
     fsGroupChangePolicy: "OnRootMismatch"
     seccompProfile:
       type: RuntimeDefault
@@ -369,6 +377,8 @@ prowlarr:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
     capabilities:
       drop:
         - ALL
@@ -459,6 +469,9 @@ sonarr:
 
   podSecurityContext:
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
     fsGroupChangePolicy: "OnRootMismatch"
     seccompProfile:
       type: RuntimeDefault
@@ -468,6 +481,8 @@ sonarr:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
     capabilities:
       drop:
         - ALL
@@ -563,6 +578,9 @@ radarr:
 
   podSecurityContext:
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
     fsGroupChangePolicy: "OnRootMismatch"
     seccompProfile:
       type: RuntimeDefault
@@ -572,6 +590,8 @@ radarr:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
     capabilities:
       drop:
         - ALL
@@ -667,6 +687,9 @@ sabnzbd:
 
   podSecurityContext:
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
     fsGroupChangePolicy: "OnRootMismatch"
     seccompProfile:
       type: RuntimeDefault
@@ -676,6 +699,8 @@ sabnzbd:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
     capabilities:
       drop:
         - ALL
