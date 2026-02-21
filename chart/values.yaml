@@ -130,6 +130,8 @@ jellyfin:
       gpuLimit: 1
       # GPU resource name (default: nvidia.com/gpu)
       resourceName: nvidia.com/gpu
+      # Runtime class name for the NVIDIA container runtime
+      runtimeClassName: nvidia
       # Optional scheduling controls when NVIDIA is enabled (usually not required
       # because requesting GPU resources already pins to GPU nodes)
       nodeSelector: {}
@@ -276,6 +278,8 @@ plex:
       gpuLimit: 1
       # GPU resource name (default: nvidia.com/gpu)
       resourceName: nvidia.com/gpu
+      # Runtime class name for the NVIDIA container runtime
+      runtimeClassName: nvidia
       # Optional scheduling controls when NVIDIA is enabled (usually not required
       # because requesting GPU resources already pins to GPU nodes)
       nodeSelector: {}

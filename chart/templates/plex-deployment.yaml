@@ -25,6 +25,9 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "plex") }}
+      {{- if .Values.plex.hardwareAcceleration.nvidia.enabled }}
+      runtimeClassName: {{ .Values.plex.hardwareAcceleration.nvidia.runtimeClassName }}
+      {{- end }}
       securityContext:
         {{- if .Values.plex.hardwareAcceleration.intelQuickSync.enabled }}
         runAsNonRoot: true
