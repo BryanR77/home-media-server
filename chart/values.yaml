@@ -19,8 +19,8 @@ global:
   httpRoute:
     enabled: true
     parentRef:
-      name: cilium
-      namespace: kube-system
+      name: media-gateway
+      namespace: default
     annotations: {}
 
 # Shared storage configuration
