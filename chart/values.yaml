@@ -36,6 +36,13 @@ shared:
     # /media/tv - for TV shows (Sonarr -> Jellyfin)
     # /media/movies - for movies (Radarr -> Jellyfin)
     # /media/music - for music (Lidarr -> Jellyfin, if added later)
+
+    # NFS configuration - when enabled, creates a static PersistentVolume backed by NFS.
+    # storageClass will be ignored; static binding is used instead.
+    nfs:
+      enabled: false
+      server: ""   # NFS server IP or hostname (e.g. "192.168.1.100")
+      path: ""     # Exported NFS path (e.g. "/mnt/media")
   
 
 # Jellyfin - Media Server
