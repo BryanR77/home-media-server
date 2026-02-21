@@ -25,6 +25,9 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "jellyfin") }}
+      {{- if .Values.jellyfin.hardwareAcceleration.nvidia.enabled }}
+      runtimeClassName: {{ .Values.jellyfin.hardwareAcceleration.nvidia.runtimeClassName }}
+      {{- end }}
       securityContext:
         {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
         runAsNonRoot: true
