@@ -15,14 +15,13 @@ global:
     annotations: {}
     tls: []
   
-  # OpenShift Route configuration (preferred for OKD)
-  route:
+  # GatewayAPI HTTPRoute configuration
+  httpRoute:
     enabled: true
-    tls:
-      termination: edge
-      insecureEdgeTerminationPolicy: Redirect
-    annotations:
-      haproxy.router.openshift.io/timeout: "5m"
+    parentRef:
+      name: cilium
+      namespace: kube-system
+    annotations: {}
 
 # Shared storage configuration
 shared:
@@ -38,18 +37,6 @@ shared:
     # /media/movies - for movies (Radarr -> Jellyfin)
     # /media/music - for music (Lidarr -> Jellyfin, if added later)
   
-  # OpenShift/OKD Topology View customization
-  topology:
-    # Custom icons for each application in the topology view
-    icons:
-      jellyfin: "icon-mediaplayer"
-      plex: "icon-mediaplayer"
-      prowlarr: "icon-search"
-      sonarr: "icon-tv"
-      radarr: "icon-video"
-      sabnzbd: "icon-download"
-    # Show connections between apps in topology view
-    showConnections: true
 
 # Jellyfin - Media Server
 jellyfin:
@@ -116,9 +103,6 @@ jellyfin:
       # Video group GID for /dev/dri access (typically 44 on most Linux systems, 39 on some)
       # Set to null to auto-detect or override with specific GID
       videoGroupId: 44
-      # Create SecurityContextConstraints (requires cluster-admin privileges)
-      # Set to false when deploying in namespaced mode or without cluster-admin access
-      createSCC: false
       # Optional scheduling controls when Quick Sync is enabled
       # Provide node labels of machines with Intel iGPU (/dev/dri)
       nodeSelector: {}
@@ -126,7 +110,7 @@ jellyfin:
       tolerations: []
       # Optional pod affinity/anti-affinity
       affinity: {}
-    
+
     # NVIDIA NVENC (requires NVIDIA GPU Operator/device plugin)
     nvidia:
       enabled: false
@@ -260,9 +244,6 @@ plex:
       # Video group GID for /dev/dri access (typically 44 on most Linux systems, 39 on some)
       # Set to null to auto-detect or override with specific GID
       videoGroupId: 44
-      # Create SecurityContextConstraints (requires cluster-admin privileges)
-      # Set to false when deploying in namespaced mode or without cluster-admin access
-      createSCC: false
       # Optional scheduling controls when Quick Sync is enabled
       # Provide node labels of machines with Intel iGPU (/dev/dri)
       nodeSelector: {}
@@ -270,7 +251,7 @@ plex:
       tolerations: []
       # Optional pod affinity/anti-affinity
       affinity: {}
-    
+
     # NVIDIA NVENC (requires NVIDIA GPU Operator/device plugin)
     nvidia:
       enabled: false

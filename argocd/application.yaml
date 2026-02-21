@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: media-stack
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/BryanR77/home-media-server.git
+      targetRevision: HEAD
+      path: chart
+      helm:
+        valueFiles:
+          - $values/media-stack/values.yaml
+    # Replace with your cluster config repo URL.
+    # The override values file should live at media-stack/values.yaml in that repo.
+    - repoURL: https://github.com/<your-cluster-config-repo>.git
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: media-server
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

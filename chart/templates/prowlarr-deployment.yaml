@@ -5,12 +5,6 @@ metadata:
   name: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}
   labels:
     {{- include "media-stack.appLabels" (dict "root" . "app" "prowlarr") | nindent 4 }}
-  annotations:
-    openshift.io/generated-by: "Helm"
-    {{- if .Values.shared.topology.icons.prowlarr }}
-    app.openshift.io/runtime: "prowlarr"
-    app.openshift.io/runtime-icon: {{ .Values.shared.topology.icons.prowlarr | quote }}
-    {{- end }}
 spec:
   replicas: {{ .Values.prowlarr.replicaCount }}
   strategy:
@@ -21,7 +15,6 @@ spec:
   template:
     metadata:
       annotations:
-        openshift.io/generated-by: "Helm"
         {{- with .Values.prowlarr.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
