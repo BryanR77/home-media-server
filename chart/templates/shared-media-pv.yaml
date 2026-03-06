@@ -1,0 +1,24 @@
+{{- if and .Values.shared.media.enabled .Values.shared.media.nfs.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: shared-media-nfs
+  labels:
+    {{- include "media-stack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: shared-media
+spec:
+  capacity:
+    storage: {{ .Values.shared.media.size }}
+  accessModes:
+    - {{ .Values.shared.media.accessMode }}
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: shared-media
+    namespace: {{ .Release.Namespace }}
+  nfs:
+    server: {{ .Values.shared.media.nfs.server | quote }}
+    path: {{ .Values.shared.media.nfs.path | quote }}
+{{- end }}

@@ -1,0 +1,164 @@
+{{- if .Values.global.httpRoute.enabled }}
+{{- if .Values.jellyfin.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "jellyfin") | nindent 4 }}
+  {{- with .Values.global.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Values.global.httpRoute.parentRef.name }}
+      namespace: {{ .Values.global.httpRoute.parentRef.namespace }}
+  hostnames:
+    - "{{ .Values.jellyfin.ingress.subdomain }}.{{ .Values.global.baseDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}
+          port: {{ .Values.jellyfin.service.port }}
+{{- end }}
+{{- if .Values.plex.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "plex") | nindent 4 }}
+  {{- with .Values.global.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Values.global.httpRoute.parentRef.name }}
+      namespace: {{ .Values.global.httpRoute.parentRef.namespace }}
+  hostnames:
+    - "{{ .Values.plex.ingress.subdomain }}.{{ .Values.global.baseDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}
+          port: {{ .Values.plex.service.port }}
+{{- end }}
+{{- if .Values.prowlarr.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "prowlarr") | nindent 4 }}
+  {{- with .Values.global.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Values.global.httpRoute.parentRef.name }}
+      namespace: {{ .Values.global.httpRoute.parentRef.namespace }}
+  hostnames:
+    - "{{ .Values.prowlarr.ingress.subdomain }}.{{ .Values.global.baseDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "media-stack.appFullname" (dict "root" . "app" "prowlarr") }}
+          port: {{ .Values.prowlarr.service.port }}
+{{- end }}
+{{- if .Values.sonarr.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "sonarr") | nindent 4 }}
+  {{- with .Values.global.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Values.global.httpRoute.parentRef.name }}
+      namespace: {{ .Values.global.httpRoute.parentRef.namespace }}
+  hostnames:
+    - "{{ .Values.sonarr.ingress.subdomain }}.{{ .Values.global.baseDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}
+          port: {{ .Values.sonarr.service.port }}
+{{- end }}
+{{- if .Values.radarr.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "radarr") | nindent 4 }}
+  {{- with .Values.global.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Values.global.httpRoute.parentRef.name }}
+      namespace: {{ .Values.global.httpRoute.parentRef.namespace }}
+  hostnames:
+    - "{{ .Values.radarr.ingress.subdomain }}.{{ .Values.global.baseDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}
+          port: {{ .Values.radarr.service.port }}
+{{- end }}
+{{- if .Values.sabnzbd.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "sabnzbd") | nindent 4 }}
+  {{- with .Values.global.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Values.global.httpRoute.parentRef.name }}
+      namespace: {{ .Values.global.httpRoute.parentRef.namespace }}
+  hostnames:
+    - "{{ .Values.sabnzbd.ingress.subdomain }}.{{ .Values.global.baseDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}
+          port: {{ .Values.sabnzbd.service.port }}
+{{- end }}
+{{- end }}

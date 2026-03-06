@@ -13,7 +13,9 @@ metadata:
 spec:
   accessModes:
     - {{ .Values.shared.media.accessMode }}
-  {{- if .Values.shared.media.storageClass }}
+  {{- if .Values.shared.media.nfs.enabled }}
+  storageClassName: ""
+  {{- else if .Values.shared.media.storageClass }}
   {{- if (eq "-" .Values.shared.media.storageClass) }}
   storageClassName: ""
   {{- else }}

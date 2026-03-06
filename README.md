@@ -1,11 +1,12 @@
 # Home Media Server
 
-A unified Helm chart for deploying a complete media automation stack on Kubernetes/OKD.
+A unified Helm chart for deploying a complete media automation stack on Kubernetes.
 
 ## Applications
 
 This chart deploys:
 - **Jellyfin**: Media server and streaming platform
+- **Plex**: Media server and streaming platform
 - **Sonarr**: TV series management and automation
 - **Radarr**: Movie management and automation
 - **Prowlarr**: Indexer manager for *arr apps
@@ -15,10 +16,9 @@ This chart deploys:
 
 - **Single Chart**: One `helm install` deploys all applications
 - **Unified Configuration**: All settings in one `values.yaml` file
-- **Shared Storage**: Common downloads PVC for SABnzbd, Sonarr, and Radarr
+- **Shared Storage**: Common media PVC for all apps, with optional NFS backing
 - **Subdomain-Based Routing**: Each app gets its own subdomain (e.g., jellyfin.media.local, sonarr.media.local)
-- **Auto-Configuration**: URL bases automatically configured for *arr apps when behind a proxy
-- **OKD/OpenShift Ready**: Restrictive security contexts and Routes enabled by default
+- **GatewayAPI Support**: HTTPRoute resources for modern Kubernetes Gateway API ingress
 - **Centralized Settings**: Timezone and routing configured globally
 
 ## Quick Start
@@ -45,15 +45,16 @@ All apps share these global configurations in `values.yaml`:
 global:
   timezone: "UTC"
   baseDomain: "media.local"  # Base domain for all subdomains
-  
-  # OpenShift Route (enabled by default for OKD)
-  route:
+
+  # GatewayAPI HTTPRoute (enabled by default)
+  httpRoute:
     enabled: true
-    tls:
-      termination: edge
-      insecureEdgeTerminationPolicy: Redirect
-  
-  # Standard Ingress (alternative to Route)
+    parentRef:
+      name: media-gateway
+      namespace: default
+    annotations: {}
+
+  # Standard Ingress (alternative to HTTPRoute)
   ingress:
     enabled: false
     className: ""
@@ -65,29 +66,27 @@ global:
 
 With the default configuration, apps are accessible at their own subdomains:
 - Jellyfin: `https://jellyfin.media.local/`
+- Plex: `https://plex.media.local/`
 - Prowlarr: `https://prowlarr.media.local/`
 - Sonarr: `https://sonarr.media.local/`
 - Radarr: `https://radarr.media.local/`
 - SABnzbd: `https://sabnzbd.media.local/`
 
-Each application is served from the root of its subdomain. The *arr apps (Prowlarr, Sonarr, Radarr) can optionally be configured with a `basePath` for use behind a reverse proxy with path-based routing. When `basePath` is set, the initContainers will automatically configure the `UrlBase` in their config files.
-
 ### Routing Options
 
 The chart supports two routing methods:
 
-**OpenShift Routes** (default, `global.route.enabled: true`):
-- Native OpenShift/OKD routing with subdomain-based routing
-- TLS termination at the router
-- Recommended for OKD environments
+**GatewayAPI HTTPRoutes** (default, `global.httpRoute.enabled: true`):
+- Kubernetes Gateway API routing with subdomain-based routing
+- Requires a Gateway controller (e.g., Envoy Gateway, Contour, Istio) with a configured Gateway named `media-gateway`
+- Recommended for modern Kubernetes clusters
 
 **Standard Ingress** (alternative, `global.ingress.enabled: true`):
-- Kubernetes-native ingress for standard k8s clusters
+- Kubernetes-native ingress for clusters with a traditional Ingress controller
 - Creates individual Ingress resources per app (one subdomain per Ingress)
 - Supports custom ingress classes and annotations
-- Use when Routes are not available
 
-**Note:** Enable only one routing method at a time (either Route or Ingress, not both).
+**Note:** Enable only one routing method at a time (either HTTPRoute or Ingress, not both).
 
 ### Shared Media Storage
 
@@ -102,13 +101,32 @@ shared:
     size: 500Gi
 ```
 
-All apps mount this PVC at `/media` and use subdirectories:
+All apps mount this PVC and use subdirectories:
 - **SABnzbd**: Downloads to `/media/downloads`
 - **Sonarr**: Monitors `/media/downloads`, organizes to `/media/tv`
 - **Radarr**: Monitors `/media/downloads`, organizes to `/media/movies`
 - **Jellyfin**: Streams from `/media/tv`, `/media/movies`, etc.
+- **Plex**: Streams from `/data/tv`, `/data/movies`, etc.
 
-This approach avoids unnecessary file copies - Sonarr and Radarr can hardlink or move files within the same filesystem, which is instant and doesn't duplicate data.
+This approach avoids unnecessary file copies — Sonarr and Radarr can hardlink or move files within the same filesystem, which is instant and doesn't duplicate data.
+
+**NFS-backed shared storage:**
+
+To use an NFS share as the shared media PVC, enable NFS mode. This creates a static PersistentVolume bound directly to your NFS export:
+
+```yaml
+shared:
+  media:
+    enabled: true
+    accessMode: ReadWriteMany
+    size: 500Gi
+    nfs:
+      enabled: true
+      server: "192.168.1.100"   # NFS server IP or hostname
+      path: "/mnt/media"        # Exported NFS path
+```
+
+When NFS is enabled, `storageClass` is ignored and static binding is used instead.
 
 **Post-Installation Configuration:**
 
@@ -130,29 +148,13 @@ After deploying, configure each app through its web UI:
    - Add library with folder: `/media/tv` for TV shows
    - Add library with folder: `/media/movies` for movies
 
-**Post-Installation Configuration:**
-
-After deploying, configure each app through its web UI:
-
-1. **SABnzbd** (`Settings → Folders`):
-   - Temporary Download Folder: `/media/downloads/incomplete`
-   - Completed Download Folder: `/media/downloads/complete`
-
-2. **Sonarr** (`Settings → Media Management`):
-   - Root Folder: `/media/tv`
-   - Download Client settings should point to `/media/downloads/complete`
-
-3. **Radarr** (`Settings → Media Management`):
-   - Root Folder: `/media/movies`
-   - Download Client settings should point to `/media/downloads/complete`
-
-4. **Jellyfin** (`Dashboard → Libraries`):
-   - Add library with folder: `/media/tv` for TV shows
-   - Add library with folder: `/media/movies` for movies
+5. **Plex** (`Settings → Libraries`):
+   - Add library with folder: `/data/tv` for TV shows
+   - Add library with folder: `/data/movies` for movies
 
 ### Per-App Subdomain Configuration
 
-Each application has its own subdomain and basePath settings:
+Each application has its own subdomain and optional basePath settings:
 
 ```yaml
 jellyfin:
@@ -161,43 +163,58 @@ jellyfin:
     subdomain: "jellyfin"      # Accessible at jellyfin.media.local
     basePath: ""               # No path prefix (serves from /)
 
+plex:
+  enabled: true
+  ingress:
+    subdomain: "plex"          # Accessible at plex.media.local
+    basePath: ""
+
 sonarr:
   enabled: true
   ingress:
     subdomain: "sonarr"        # Accessible at sonarr.media.local
-    basePath: "/sonarr"        # Optional: path for reverse proxy setups
+    basePath: ""
 
 radarr:
   enabled: true
   ingress:
     subdomain: "radarr"        # Accessible at radarr.media.local
-    basePath: "/radarr"        # Optional: path for reverse proxy setups
+    basePath: ""
 
 prowlarr:
   enabled: true
   ingress:
     subdomain: "prowlarr"      # Accessible at prowlarr.media.local
-    basePath: "/prowlarr"      # Optional: path for reverse proxy setups
+    basePath: ""
 
 sabnzbd:
   enabled: true
   ingress:
     subdomain: "sabnzbd"       # Accessible at sabnzbd.media.local
-    basePath: "/sabnzbd"       # Optional: path for reverse proxy setups
+    basePath: ""
 ```
 
-**Note on `basePath`:** The `basePath` is primarily useful when deploying behind Authentik or another reverse proxy that uses path-based routing. Set it to configure the application's internal URL base. When accessed directly via subdomains without a proxy, the `basePath` values should typically be empty strings.
+### Plex Claim Token
+
+To register your Plex server with your Plex account on first deploy, provide a claim token:
+
+```yaml
+plex:
+  claimToken: "claim-xxxxxxxxxxxxxxxxxxxx"
+```
+
+Get your token from [plex.tv/claim](https://www.plex.tv/claim/). Tokens expire after 4 minutes, so deploy immediately after generating one.
 
 ### Authentik / Internal Proxy
 
-- **Disable external Ingress/Route for specific apps:** If you want Authentik's outpost (running inside the cluster) to proxy requests to an application directly, disable that app's ingress so no public Ingress/Route is created. The application's `Service` stays `ClusterIP` and remains reachable inside the cluster by the outpost.
+- **Disable external routing for specific apps:** If you want Authentik's outpost (running inside the cluster) to proxy requests to an application directly, disable that app's ingress so no public HTTPRoute/Ingress is created. The application's `Service` stays `ClusterIP` and remains reachable inside the cluster by the outpost.
 
 - **Per-app settings (example):**
 
 ```yaml
 sonarr:
   ingress:
-    enabled: false    # don't create an external Ingress/Route for Sonarr
+    enabled: false    # don't create an external HTTPRoute/Ingress for Sonarr
   service:
     annotations:
       internal.authentik.io/expose: "true"  # optional marker for your outpost
@@ -221,15 +238,11 @@ sabnzbd:
     annotations: {}
 ```
 
-- **How it works:** The outpost (in-cluster) can reach the services using Kubernetes DNS (e.g., `sonarr.media-stack-sonarr.svc.cluster.local`) or the release-specific service name. The chart keeps services as `ClusterIP` by default, which is precisely what the outpost needs for internal routing. Adding service annotations is optional but useful if you want the outpost to auto-discover targets by annotation.
-
-- **Open-ended by design:** All changes are opt-in. By default `ingress.enabled` is `true` for apps, and `service.annotations` is an empty map — so users not running Authentik are unaffected.
+The outpost can reach services using Kubernetes DNS (e.g., `sonarr.media.svc.cluster.local`). Adding service annotations is optional but useful if you want the outpost to auto-discover targets.
 
 ### Advanced Configuration
 
 **Using Existing PVCs:**
-
-If you have existing PersistentVolumeClaims, you can reference them instead of creating new ones:
 
 ```yaml
 jellyfin:
@@ -241,7 +254,6 @@ shared:
   media:
     enabled: false  # Don't create new PVC
 
-# Then reference existing PVC in apps
 sonarr:
   persistence:
     media:
@@ -273,158 +285,47 @@ sonarr:
       readOnly: true
 ```
 
-### Hardware Acceleration for Jellyfin
+### Hardware Acceleration
 
-Jellyfin supports hardware-accelerated transcoding using Intel Quick Sync or NVIDIA NVENC. Both options are disabled by default for compatibility.
+Both Jellyfin and Plex support hardware-accelerated transcoding using Intel Quick Sync or NVIDIA NVENC. Both options are disabled by default.
 
 **Intel Quick Sync:**
 
-To enable Intel Quick Sync, you need to mount the `/dev/dri` device from the host:
-
 ```yaml
-jellyfin:
+jellyfin:   # or plex:
   hardwareAcceleration:
     intelQuickSync:
       enabled: true
       devicePath: /dev/dri  # Default path
       videoGroupId: 44      # Video group GID (44 on most systems, 39 on some)
-      createSCC: true       # Set to true only if you have cluster-admin privileges
 ```
 
-This will:
-- Mount the `/dev/dri` host device into the container
-- Add the video group to the container for device access
-- Allow Jellyfin to use Intel Quick Sync for hardware transcoding
-
-**For OpenShift/OKD:**
-
-The chart can automatically create a custom SecurityContextConstraints (SCC) for Jellyfin with Intel Quick Sync support. However, **this requires cluster-admin privileges**.
-
-- **If you have cluster-admin access**: Set `createSCC: true` and the chart will create the SCC automatically
-- **If deploying in namespaced mode**: Set `createSCC: false` (default) and ask a cluster admin to create the SCC manually
-
-**Manual SCC Creation (for cluster admins):**
-
-If you don't have cluster-admin privileges or prefer to create the SCC separately, a cluster administrator can apply this SCC:
-
-```yaml
-apiVersion: security.openshift.io/v1
-kind: SecurityContextConstraints
-metadata:
-  name: jellyfin-quicksync
-  annotations:
-    kubernetes.io/description: "SCC for Jellyfin with Intel Quick Sync hardware acceleration. Allows access to /dev/dri device for transcoding."
-allowHostDirVolumePlugin: true
-allowPrivilegedContainer: false
-allowPrivilegeEscalation: false
-allowedCapabilities: []
-defaultAddCapabilities: []
-fsGroup:
-  type: RunAsAny
-groups: []
-priority: 10
-readOnlyRootFilesystem: false
-requiredDropCapabilities:
-  - KILL
-  - MKNOD
-  - SETUID
-  - SETGID
-runAsUser:
-  # Use namespace-assigned UID range like the default restricted SCC
-  type: MustRunAsRange
-seLinuxContext:
-  type: MustRunAs
-supplementalGroups:
-  type: RunAsAny
-volumes:
-  - configMap
-  - downwardAPI
-  - emptyDir
-  - hostPath
-  - persistentVolumeClaim
-  - projected
-  - secret
-allowHostIPC: false
-allowHostNetwork: false
-allowHostPID: false
-allowHostPorts: false
-users:
-  - system:serviceaccount:YOUR_NAMESPACE:media-stack-jellyfin
-```
-
-Replace `YOUR_NAMESPACE` with your actual namespace (e.g., `media`). The service account name follows the pattern `<release-name>-jellyfin`.
-
-**Key requirements for the SCC:**
-- `allowHostDirVolumePlugin: true` - Required to mount `/dev/dri` from the host
-- `allowPrivilegeEscalation: false` - Must match the pod's security context
-- `hostPath` in volumes list - Allows hostPath volume type
-- `runAsUser: MustRunAsRange` - Lets OpenShift inject a non-root UID automatically; fixes `runAsNonRoot` errors for images that default to root (e.g., busybox in initContainers)
-- **No seccomp profile** - Custom SCCs in OpenShift don't support seccomp annotations; the runtime default is used
-
-**To apply the SCC:**
-
-```bash
-# Save the above YAML to a file
-cat > jellyfin-quicksync-scc.yaml <<'EOF'
-# ... paste the SCC YAML above ...
-EOF
-
-# Apply it (requires cluster-admin privileges)
-oc apply -f jellyfin-quicksync-scc.yaml
-
-# Verify it was created
-oc get scc jellyfin-quicksync
-
-# If you previously created it with RunAsAny, patch it:
-oc patch scc jellyfin-quicksync --type=merge -p '{"runAsUser":{"type":"MustRunAsRange"},"allowPrivilegeEscalation":false}'
-```
-
-After the SCC is created, deploy the chart with Quick Sync enabled but SCC creation disabled:
-
-```yaml
-jellyfin:
-  hardwareAcceleration:
-    intelQuickSync:
-      enabled: true
-      createSCC: false  # Don't try to create SCC (already exists)
-```
+This mounts the `/dev/dri` host device into the container and adds the video group for device access.
 
 **NVIDIA NVENC:**
 
-To enable NVIDIA GPU acceleration, you must first install the [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html) in your cluster. Then enable:
+Requires the [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html) installed in your cluster.
 
 ```yaml
-jellyfin:
+jellyfin:   # or plex:
   hardwareAcceleration:
     nvidia:
       enabled: true
-      gpuLimit: 1  # Number of GPUs to allocate
-      resourceName: nvidia.com/gpu  # GPU resource name
+      gpuLimit: 1                    # Number of GPUs to allocate
+      resourceName: nvidia.com/gpu   # GPU resource name
+      runtimeClassName: nvidia
 ```
-
-This will:
-- Request GPU resources from the NVIDIA device plugin
-- Automatically mount NVIDIA device files (`/dev/nvidia0`, `/dev/nvidiactl`, `/dev/nvidia-uvm`)
-- Allow Jellyfin to use NVENC for hardware transcoding
 
 **Important Notes:**
 - Enable only ONE acceleration method at a time (either Quick Sync or NVIDIA, not both)
-- After enabling hardware acceleration, configure it in Jellyfin's web UI under `Dashboard → Playback → Transcoding`
-- For Intel Quick Sync on OKD/OpenShift, a custom SCC is automatically created by the Helm chart
-- For NVIDIA NVENC, the GPU Operator typically works with the default `restricted-v2` SCC
-- When hardware acceleration is enabled, you can pin Jellyfin to nodes with the hardware using the per-acceleration scheduling fields:
+- After enabling hardware acceleration, configure it in the app's web UI under transcoding settings
+- When hardware acceleration is enabled, you can pin the pod to nodes with the hardware using the per-acceleration scheduling fields:
 
 ```yaml
 jellyfin:
-  nodeSelector:
-    feature.node.kubernetes.io/gpu.present: "true"
-    # Or target a specific node by hostname:
-    # kubernetes.io/hostname: "p320-node"
-
   hardwareAcceleration:
     intelQuickSync:
       enabled: true
-      # Use these only when you want to override base scheduling for Quick Sync
       nodeSelector:
         kubernetes.io/hostname: "node-with-igpu"
       tolerations: []
@@ -432,7 +333,6 @@ jellyfin:
 
     nvidia:
       enabled: true
-      # Requesting a GPU pins to GPU nodes automatically; you can still override:
       nodeSelector:
         node-role.kubernetes.io/gpu: "true"
       tolerations: []
@@ -442,28 +342,30 @@ jellyfin:
 ## Images
 
 This chart uses:
-- **Jellyfin**: `jellyfin/jellyfin:10.11.1` (official)
-- **Prowlarr**: `ghcr.io/home-operations/prowlarr:2.1.5`
-- **Sonarr**: `ghcr.io/home-operations/sonarr:4.0.16.2942`
-- **Radarr**: `ghcr.io/home-operations/radarr:6.0.3.10276`
+- **Jellyfin**: `jellyfin/jellyfin:10.11.6` (official)
+- **Plex**: `ghcr.io/home-operations/plex:1.43.0`
+- **Prowlarr**: `ghcr.io/home-operations/prowlarr:2.3.2`
+- **Sonarr**: `ghcr.io/home-operations/sonarr:4.0.16`
+- **Radarr**: `ghcr.io/home-operations/radarr:6.1.1`
 - **SABnzbd**: `ghcr.io/home-operations/sabnzbd:4.5.5`
 
-The `home-operations` images are community-maintained and rootless-compatible, replacing the archived `onedr0p` images. Specific versions are pinned by default but can be overridden in `values.yaml`.
+The `home-operations` images are community-maintained and rootless-compatible. Specific versions are pinned by default but can be overridden in `values.yaml`.
 
 ## Requirements
 
-- Kubernetes 1.19+ or OKD/OpenShift 4.x
+- Kubernetes 1.19+
 - Helm 3.x
 - Persistent volume provisioning
-- For shared downloads: Storage class supporting ReadWriteMany
+- For shared downloads: Storage class supporting ReadWriteMany (or NFS)
+- For GatewayAPI HTTPRoutes: A Gateway API-compatible controller with a configured Gateway
 
 ## Security
 
 All containers run with:
-- Non-root user (dynamically assigned on OKD)
+- Non-root user (`65534` by default, configurable per app)
 - Read-only root filesystem
 - Dropped capabilities
-- Seccomp profile
+- Seccomp profile (RuntimeDefault)
 
 ## Uninstall
 

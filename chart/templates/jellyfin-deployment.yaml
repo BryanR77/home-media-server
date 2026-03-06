@@ -5,12 +5,6 @@ metadata:
   name: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}
   labels:
     {{- include "media-stack.appLabels" (dict "root" . "app" "jellyfin") | nindent 4 }}
-  annotations:
-    openshift.io/generated-by: "Helm"
-    {{- if .Values.shared.topology.icons.jellyfin }}
-    app.openshift.io/runtime: "jellyfin"
-    app.openshift.io/runtime-icon: {{ .Values.shared.topology.icons.jellyfin | quote }}
-    {{- end }}
 spec:
   replicas: {{ .Values.jellyfin.replicaCount }}
   strategy:
@@ -21,7 +15,6 @@ spec:
   template:
     metadata:
       annotations:
-        openshift.io/generated-by: "Helm"
         {{- with .Values.jellyfin.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -32,14 +25,16 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "jellyfin") }}
+      {{- if .Values.jellyfin.hardwareAcceleration.nvidia.enabled }}
+      runtimeClassName: {{ .Values.jellyfin.hardwareAcceleration.nvidia.runtimeClassName }}
+      {{- end }}
       securityContext:
         {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
-        # Custom security context for Intel Quick Sync
-        # Seccomp profile is omitted as it's not supported by custom SCCs
         runAsNonRoot: true
         fsGroup: 1000
         fsGroupChangePolicy: "OnRootMismatch"
-        # Add video group for /dev/dri access
+        seccompProfile:
+          type: RuntimeDefault
         {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.videoGroupId }}
         supplementalGroups:
           - {{ .Values.jellyfin.hardwareAcceleration.intelQuickSync.videoGroupId }}
@@ -65,17 +60,7 @@ spec:
               echo "Directory structure created successfully"
               ls -la /media/
           securityContext:
-            {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
-            # When using Quick Sync, init container must also run as non-root
-            # Let OpenShift assign the UID dynamically from namespace range
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
-            {{- else }}
             {{- toYaml .Values.jellyfin.initContainer.securityContext | nindent 12 }}
-            {{- end }}
           volumeMounts:
             - name: media
               mountPath: /media
@@ -83,18 +68,7 @@ spec:
       containers:
         - name: jellyfin
           securityContext:
-            {{- if .Values.jellyfin.hardwareAcceleration.intelQuickSync.enabled }}
-            # Custom security context for Intel Quick Sync /dev/dri access
-            # Let OpenShift assign the UID dynamically from namespace range
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
-            {{- else }}
             {{- toYaml .Values.jellyfin.securityContext | nindent 12 }}
-            {{- end }}
           image: "{{ .Values.jellyfin.image.repository }}:{{ .Values.jellyfin.image.tag }}"
           imagePullPolicy: {{ .Values.jellyfin.image.pullPolicy }}
           env:
