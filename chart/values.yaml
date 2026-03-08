@@ -1054,6 +1054,7 @@ tdarrNode:
       # Verify what's available: kubectl exec <tdarr-node-pod> -- vainfo
       libvaDriverName: ""
       # Pin this pod to nodes that have an Intel iGPU.
+      # Label applied by NFD (intel.feature.node.kubernetes.io/gpu).
       nodeSelector:
         intel.feature.node.kubernetes.io/gpu: "true"
       tolerations: []

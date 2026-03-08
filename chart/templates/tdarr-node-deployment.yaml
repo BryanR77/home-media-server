@@ -73,7 +73,7 @@ spec:
             {{- with .Values.tdarrNode.resources }}
             limits:
               {{- toYaml .limits | nindent 14 }}
-              {{- if $.Values.tdarrNode.hardwareAcceleration.intelVaapi.enabled }}
+              {{- if and $.Values.tdarrNode.hardwareAcceleration.intelVaapi.enabled $.Values.tdarrNode.hardwareAcceleration.intelVaapi.resourceName }}
               {{ $.Values.tdarrNode.hardwareAcceleration.intelVaapi.resourceName }}: {{ $.Values.tdarrNode.hardwareAcceleration.intelVaapi.resourceCount | quote }}
               {{- end }}
             requests:
