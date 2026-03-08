@@ -1054,8 +1054,8 @@ tdarrNode:
       # Verify what's available: kubectl exec <tdarr-node-pod> -- vainfo
       libvaDriverName: ""
       # Pin this pod to nodes that have an Intel iGPU.
-      # Example: kubernetes.io/hostname: my-intel-node
-      nodeSelector: {}
+      nodeSelector:
+        intel.feature.node.kubernetes.io/gpu: "true"
       tolerations: []
       affinity: {}
 
@@ -1086,12 +1086,21 @@ tdarrNode:
 
   nodeSelector: {}
   tolerations: []
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tdarr-node
+          topologyKey: kubernetes.io/hostname
   podAnnotations: {}
   podLabels: {}
-  replicaCount: 1
+  replicaCount: 2
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
   extraEnv: []
   extraVolumes: []
   extraVolumeMounts: []

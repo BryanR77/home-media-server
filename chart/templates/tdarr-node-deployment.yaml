@@ -56,8 +56,12 @@ spec:
               value: {{ .Values.tdarrNode.serverPort | quote }}
             - name: inContainer
               value: "1"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: nodeName
-              value: {{ .Values.tdarrNode.nodeName | quote }}
+              value: "$(POD_NAME)"
             {{- if and .Values.tdarrNode.hardwareAcceleration.intelVaapi.enabled .Values.tdarrNode.hardwareAcceleration.intelVaapi.libvaDriverName }}
             - name: LIBVA_DRIVER_NAME
               value: {{ .Values.tdarrNode.hardwareAcceleration.intelVaapi.libvaDriverName | quote }}
