@@ -66,7 +66,15 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
           resources:
-            {{- toYaml .Values.tdarrNode.resources | nindent 12 }}
+            {{- with .Values.tdarrNode.resources }}
+            limits:
+              {{- toYaml .limits | nindent 14 }}
+              {{- if $.Values.tdarrNode.hardwareAcceleration.intelVaapi.enabled }}
+              {{ $.Values.tdarrNode.hardwareAcceleration.intelVaapi.resourceName }}: {{ $.Values.tdarrNode.hardwareAcceleration.intelVaapi.resourceCount | quote }}
+              {{- end }}
+            requests:
+              {{- toYaml .requests | nindent 14 }}
+            {{- end }}
           volumeMounts:
             {{- if .Values.tdarrNode.persistence.media.enabled }}
             - name: media
@@ -76,10 +84,6 @@ spec:
               mountPath: /temp
             - name: tmp
               mountPath: /tmp
-            {{- if .Values.tdarrNode.hardwareAcceleration.intelVaapi.enabled }}
-            - name: dri
-              mountPath: {{ .Values.tdarrNode.hardwareAcceleration.intelVaapi.devicePath }}
-            {{- end }}
             {{- with .Values.tdarrNode.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -98,12 +102,6 @@ spec:
           {{- end }}
         - name: tmp
           emptyDir: {}
-        {{- if .Values.tdarrNode.hardwareAcceleration.intelVaapi.enabled }}
-        - name: dri
-          hostPath:
-            path: {{ .Values.tdarrNode.hardwareAcceleration.intelVaapi.devicePath }}
-            type: Directory
-        {{- end }}
         {{- with .Values.tdarrNode.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

@@ -1034,10 +1034,14 @@ tdarrNode:
   hardwareAcceleration:
     intelVaapi:
       enabled: false
-      # Host path to the DRI device directory
-      devicePath: /dev/dri
+      # Device plugin resource to request. The Intel GPU Device Plugin DaemonSet must
+      # be deployed in the cluster — it injects /dev/dri into the pod without a hostPath
+      # volume, which is required for PodSecurity "baseline" compliance.
+      # https://github.com/intel/intel-device-plugins-for-kubernetes
+      resourceName: "gpu.intel.com/i915"
+      resourceCount: 1
       # VA-API user-space driver name set as LIBVA_DRIVER_NAME inside the container.
-      # The driver must exist inside the tdarr_node image, NOT on the Talos host.
+      # The driver must exist inside the tdarr_node image, NOT on the host.
       # Leave empty to let libva auto-detect (safest default).
       # Common values:
       #   iHD  - intel-media-driver (Broadwell+, better H.265 encode/decode)
