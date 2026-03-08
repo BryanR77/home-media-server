@@ -359,7 +359,7 @@ prowlarr:
   
   image:
     repository: ghcr.io/home-operations/prowlarr
-    tag: "2.3.2"
+    tag: "2.3.3"
     pullPolicy: Always
 
   serviceAccount:
@@ -896,7 +896,7 @@ tdarr:
 
   image:
     repository: haveagitgat/tdarr
-    tag: "2.61.01"
+    tag: "2.62.01"
     pullPolicy: IfNotPresent
 
   # User/group IDs for file ownership (passed as PUID/PGID to the container)
@@ -1005,7 +1005,7 @@ tdarrNode:
 
   image:
     repository: haveagitgat/tdarr_node
-    tag: "2.61.01"
+    tag: "2.62.01"
     pullPolicy: IfNotPresent
 
   # User/group IDs for file ownership (passed as PUID/PGID to the container)
