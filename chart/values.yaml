@@ -896,8 +896,8 @@ tdarr:
 
   image:
     repository: haveagitgat/tdarr
-    tag: "latest"
-    pullPolicy: Always
+    tag: "2.61.01"
+    pullPolicy: IfNotPresent
 
   # User/group IDs for file ownership (passed as PUID/PGID to the container)
   puid: "1000"
@@ -1000,8 +1000,8 @@ tdarrNode:
 
   image:
     repository: haveagitgat/tdarr_node
-    tag: "latest"
-    pullPolicy: Always
+    tag: "2.61.01"
+    pullPolicy: IfNotPresent
 
   # User/group IDs for file ownership (passed as PUID/PGID to the container)
   puid: "1000"
