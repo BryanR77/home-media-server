@@ -81,6 +81,10 @@ spec:
               mountPath: /app/logs
             - name: tmp
               mountPath: /tmp
+            {{- if .Values.tdarr.persistence.media.enabled }}
+            - name: media
+              mountPath: /media
+            {{- end }}
             {{- with .Values.tdarr.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -94,6 +98,11 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
+        {{- if .Values.tdarr.persistence.media.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Values.tdarr.persistence.media.existingClaim }}
+        {{- end }}
         {{- with .Values.tdarr.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

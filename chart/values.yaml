@@ -942,6 +942,11 @@ tdarr:
       existingClaim: ""
       annotations: {}
 
+    media:
+      enabled: true
+      existingClaim: "shared-media"
+      # Mounted at /media so the server can scan libraries and dispatch work to nodes
+
   resources:
     limits:
       cpu: 1000m
