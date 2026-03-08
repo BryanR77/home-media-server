@@ -1,0 +1,31 @@
+{{- if .Values.tautulli.enabled }}
+{{- if .Values.tautulli.persistence.config.enabled }}
+{{- if not .Values.tautulli.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "tautulli") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "tautulli") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.tautulli.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.tautulli.persistence.config.accessMode }}
+  {{- if .Values.tautulli.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.tautulli.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.tautulli.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.tautulli.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- end }}

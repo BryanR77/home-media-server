@@ -1,0 +1,84 @@
+{{- if .Values.tautulli.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "tautulli") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "tautulli") | nindent 4 }}
+spec:
+  replicas: {{ .Values.tautulli.replicaCount }}
+  strategy:
+    {{- toYaml .Values.tautulli.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "tautulli") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.tautulli.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "tautulli") | nindent 8 }}
+        {{- with .Values.tautulli.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "tautulli") }}
+      securityContext:
+        {{- toYaml .Values.tautulli.podSecurityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      containers:
+        - name: tautulli
+          securityContext:
+            {{- toYaml .Values.tautulli.securityContext | nindent 12 }}
+          image: "{{ .Values.tautulli.image.repository }}:{{ .Values.tautulli.image.tag }}"
+          imagePullPolicy: {{ .Values.tautulli.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.tautulli.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.tautulli.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.tautulli.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.tautulli.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.tautulli.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.tautulli.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "tautulli") }}-config
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.tautulli.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.tautulli.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tautulli.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tautulli.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

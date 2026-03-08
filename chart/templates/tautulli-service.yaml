@@ -1,0 +1,21 @@
+{{- if .Values.tautulli.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "tautulli") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "tautulli") | nindent 4 }}
+  {{- with .Values.tautulli.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.tautulli.service.type }}
+  ports:
+    - port: {{ .Values.tautulli.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "tautulli") | nindent 4 }}
+{{- end }}

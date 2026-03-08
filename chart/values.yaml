@@ -785,3 +785,103 @@ sabnzbd:
   extraVolumes: []
   extraVolumeMounts: []
 
+# Tautulli - Plex Media Server Monitoring
+tautulli:
+  enabled: true
+
+  # Subdomain configuration
+  ingress:
+    enabled: true
+    subdomain: "tautulli"
+    basePath: ""
+
+  image:
+    repository: ghcr.io/home-operations/tautulli
+    tag: "2.15.2"
+    pullPolicy: Always
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    annotations: {}
+    type: ClusterIP
+    port: 8181
+    targetPort: 8181
+
+  persistence:
+    config:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      existingClaim: ""
+      annotations: {}
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  livenessProbe:
+    httpGet:
+      path: /status
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /status
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  startupProbe:
+    httpGet:
+      path: /status
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  extraVolumes: []
+  extraVolumeMounts: []
+
