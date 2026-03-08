@@ -1,0 +1,31 @@
+{{- if .Values.tdarr.enabled }}
+{{- if .Values.tdarr.persistence.server.enabled }}
+{{- if not .Values.tdarr.persistence.server.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "tdarr") }}-server
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "tdarr") | nindent 4 }}
+    app.kubernetes.io/component: server
+  {{- with .Values.tdarr.persistence.server.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.tdarr.persistence.server.accessMode }}
+  {{- if .Values.tdarr.persistence.server.storageClass }}
+  {{- if (eq "-" .Values.tdarr.persistence.server.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.tdarr.persistence.server.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.tdarr.persistence.server.size }}
+{{- end }}
+{{- end }}
+{{- end }}

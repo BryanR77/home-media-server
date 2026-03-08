@@ -1,0 +1,25 @@
+{{- if .Values.tdarr.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "tdarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "tdarr") | nindent 4 }}
+  {{- with .Values.tdarr.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.tdarr.service.type }}
+  ports:
+    - port: {{ .Values.tdarr.service.webUIPort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.tdarr.service.serverPort }}
+      targetPort: server
+      protocol: TCP
+      name: server
+  selector:
+    {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "tdarr") | nindent 4 }}
+{{- end }}

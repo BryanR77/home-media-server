@@ -885,3 +885,204 @@ tautulli:
   extraVolumes: []
   extraVolumeMounts: []
 
+# Tdarr - Automated media transcoding server
+tdarr:
+  enabled: false
+
+  # Subdomain configuration
+  ingress:
+    enabled: true
+    subdomain: "tdarr"
+
+  image:
+    repository: haveagitgat/tdarr
+    tag: "latest"
+    pullPolicy: Always
+
+  # User/group IDs for file ownership (passed as PUID/PGID to the container)
+  puid: "1000"
+  pgid: "1000"
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    runAsNonRoot: false
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+
+  service:
+    annotations: {}
+    type: ClusterIP
+    # Web UI port
+    webUIPort: 8265
+    # Node communication port (used by tdarrNode workers)
+    serverPort: 8266
+
+  # Set to "true" to also run a transcoding worker inside the server pod.
+  # Recommended to keep false when using a dedicated tdarrNode deployment.
+  internalNode: "false"
+
+  extraEnv: []
+
+  persistence:
+    server:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      # Stores Tdarr database, job history, and plugin configs
+      size: 5Gi
+      existingClaim: ""
+      annotations: {}
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 6
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 6
+
+  startupProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 10
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  extraVolumes: []
+  extraVolumeMounts: []
+
+# Tdarr Node - Transcoding worker with Intel QSV/VAAPI support
+tdarrNode:
+  enabled: false
+
+  # Display name shown in the Tdarr UI for this worker node
+  nodeName: "k8s-intel-node"
+
+  # Port of the tdarr server to connect to (must match tdarr.service.serverPort)
+  serverPort: "8266"
+
+  image:
+    repository: haveagitgat/tdarr_node
+    tag: "latest"
+    pullPolicy: Always
+
+  # User/group IDs for file ownership (passed as PUID/PGID to the container)
+  puid: "1000"
+  pgid: "1000"
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    runAsNonRoot: false
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+    # GIDs required for /dev/dri device access:
+    #   44  = video group (card* devices)
+    #   109 = render group (renderD* devices)
+    # Verify on your host node with: stat /dev/dri/renderD128
+    supplementalGroups:
+      - 44
+      - 109
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+
+  # Intel Quick Sync / VAAPI hardware acceleration
+  # Kaby Lake supports H.264 encode/decode and H.265 encode/decode via VAAPI.
+  hardwareAcceleration:
+    intelVaapi:
+      enabled: false
+      # Host path to the DRI device directory
+      devicePath: /dev/dri
+      # VA-API user-space driver name set as LIBVA_DRIVER_NAME inside the container.
+      # The driver must exist inside the tdarr_node image, NOT on the Talos host.
+      # Leave empty to let libva auto-detect (safest default).
+      # Common values:
+      #   iHD  - intel-media-driver (Broadwell+, better H.265 encode/decode)
+      #   i965 - intel-vaapi-driver (older driver, more commonly bundled in images)
+      # Verify what's available: kubectl exec <tdarr-node-pod> -- vainfo
+      libvaDriverName: ""
+      # Pin this pod to nodes that have an Intel iGPU.
+      # Example: kubernetes.io/hostname: my-intel-node
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+
+  persistence:
+    media:
+      enabled: true
+      existingClaim: "shared-media"
+      # Mounted at /media inside the container; point Tdarr libraries here
+
+    # Optional dedicated PVC for in-progress transcode files (/temp).
+    # Uses an emptyDir (discarded on pod restart) when disabled.
+    # Enable and size generously if transcoding very large files.
+    cache:
+      enabled: false
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 50Gi
+      existingClaim: ""
+      annotations: {}
+
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  extraEnv: []
+  extraVolumes: []
+  extraVolumeMounts: []

@@ -1,0 +1,112 @@
+{{- if .Values.tdarr.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "tdarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "tdarr") | nindent 4 }}
+spec:
+  replicas: {{ .Values.tdarr.replicaCount }}
+  strategy:
+    {{- toYaml .Values.tdarr.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "tdarr") | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.tdarr.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "tdarr") | nindent 8 }}
+        {{- with .Values.tdarr.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "tdarr") }}
+      securityContext:
+        {{- toYaml .Values.tdarr.podSecurityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      containers:
+        - name: tdarr
+          securityContext:
+            {{- toYaml .Values.tdarr.securityContext | nindent 12 }}
+          image: "{{ .Values.tdarr.image.repository }}:{{ .Values.tdarr.image.tag }}"
+          imagePullPolicy: {{ .Values.tdarr.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+            - name: PUID
+              value: {{ .Values.tdarr.puid | quote }}
+            - name: PGID
+              value: {{ .Values.tdarr.pgid | quote }}
+            - name: serverIP
+              value: "0.0.0.0"
+            - name: serverPort
+              value: {{ .Values.tdarr.service.serverPort | quote }}
+            - name: webUIPort
+              value: {{ .Values.tdarr.service.webUIPort | quote }}
+            - name: internalNode
+              value: {{ .Values.tdarr.internalNode | quote }}
+            - name: inContainer
+              value: "1"
+            {{- with .Values.tdarr.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.tdarr.service.webUIPort }}
+              protocol: TCP
+            - name: server
+              containerPort: {{ .Values.tdarr.service.serverPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.tdarr.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.tdarr.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.tdarr.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.tdarr.resources | nindent 12 }}
+          volumeMounts:
+            - name: server
+              mountPath: /app/server
+            - name: configs
+              mountPath: /app/configs
+            - name: logs
+              mountPath: /app/logs
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.tdarr.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: server
+          persistentVolumeClaim:
+            claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "tdarr") }}-server
+        - name: configs
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.tdarr.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.tdarr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tdarr.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tdarr.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
