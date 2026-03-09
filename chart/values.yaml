@@ -900,8 +900,8 @@ tdarr:
     pullPolicy: IfNotPresent
 
   # User/group IDs for file ownership (passed as PUID/PGID to the container)
-  puid: "1000"
-  pgid: "1000"
+  puid: "65534"
+  pgid: "65534"
 
   serviceAccount:
     create: true
@@ -910,7 +910,8 @@ tdarr:
 
   podSecurityContext:
     runAsNonRoot: false
-    fsGroup: 1000
+    fsGroup: 65534
+    fsGroupChangePolicy: "OnRootMismatch"
     seccompProfile:
       type: RuntimeDefault
 
@@ -1009,8 +1010,8 @@ tdarrNode:
     pullPolicy: IfNotPresent
 
   # User/group IDs for file ownership (passed as PUID/PGID to the container)
-  puid: "1000"
-  pgid: "1000"
+  puid: "65534"
+  pgid: "65534"
 
   serviceAccount:
     create: true
@@ -1019,7 +1020,8 @@ tdarrNode:
 
   podSecurityContext:
     runAsNonRoot: false
-    fsGroup: 1000
+    fsGroup: 65534
+    fsGroupChangePolicy: "OnRootMismatch"
     seccompProfile:
       type: RuntimeDefault
     # GIDs required for /dev/dri device access:
