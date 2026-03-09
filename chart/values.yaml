@@ -993,7 +993,7 @@ tdarr:
   extraVolumes: []
   extraVolumeMounts: []
 
-# Tdarr Node - Transcoding worker with Intel QSV/VAAPI support
+# Tdarr Node - Transcoding worker with Intel QSV/VAAPI and NVIDIA support
 tdarrNode:
   enabled: false
 
@@ -1057,6 +1057,21 @@ tdarrNode:
       # Label applied by NFD (intel.feature.node.kubernetes.io/gpu).
       nodeSelector:
         intel.feature.node.kubernetes.io/gpu: "true"
+      tolerations: []
+      affinity: {}
+
+    # NVIDIA NVENC/NVDEC (requires NVIDIA GPU Operator/device plugin)
+    nvidia:
+      enabled: false
+      # Number of GPUs to request (typically 1)
+      gpuLimit: 1
+      # GPU resource name (default: nvidia.com/gpu)
+      resourceName: nvidia.com/gpu
+      # Runtime class name for the NVIDIA container runtime
+      runtimeClassName: nvidia
+      # Optional scheduling controls when NVIDIA is enabled (usually not required
+      # because requesting GPU resources already pins to GPU nodes)
+      nodeSelector: {}
       tolerations: []
       affinity: {}
 

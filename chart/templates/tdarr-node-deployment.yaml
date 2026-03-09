@@ -33,6 +33,9 @@ spec:
       serviceAccountName: {{ default (printf "%s-tdarr-node" (include "media-stack.fullname" .)) .Values.tdarrNode.serviceAccount.name }}
       securityContext:
         {{- toYaml .Values.tdarrNode.podSecurityContext | nindent 8 }}
+      {{- if .Values.tdarrNode.hardwareAcceleration.nvidia.enabled }}
+      runtimeClassName: {{ .Values.tdarrNode.hardwareAcceleration.nvidia.runtimeClassName }}
+      {{- end }}
       dnsConfig:
         options:
           - name: ndots
@@ -76,6 +79,9 @@ spec:
               {{- if and $.Values.tdarrNode.hardwareAcceleration.intelVaapi.enabled $.Values.tdarrNode.hardwareAcceleration.intelVaapi.resourceName }}
               {{ $.Values.tdarrNode.hardwareAcceleration.intelVaapi.resourceName }}: {{ $.Values.tdarrNode.hardwareAcceleration.intelVaapi.resourceCount | quote }}
               {{- end }}
+              {{- if $.Values.tdarrNode.hardwareAcceleration.nvidia.enabled }}
+              {{ $.Values.tdarrNode.hardwareAcceleration.nvidia.resourceName }}: {{ $.Values.tdarrNode.hardwareAcceleration.nvidia.gpuLimit | quote }}
+              {{- end }}
             requests:
               {{- toYaml .requests | nindent 14 }}
             {{- end }}
@@ -116,6 +122,11 @@ spec:
         {{- $nodeSelector = mergeOverwrite $nodeSelector .Values.tdarrNode.hardwareAcceleration.intelVaapi.nodeSelector }}
         {{- $tolerations = concat $tolerations .Values.tdarrNode.hardwareAcceleration.intelVaapi.tolerations }}
         {{- $affinity = mergeOverwrite $affinity .Values.tdarrNode.hardwareAcceleration.intelVaapi.affinity }}
+      {{- end }}
+      {{- if .Values.tdarrNode.hardwareAcceleration.nvidia.enabled }}
+        {{- $nodeSelector = mergeOverwrite $nodeSelector .Values.tdarrNode.hardwareAcceleration.nvidia.nodeSelector }}
+        {{- $tolerations = concat $tolerations .Values.tdarrNode.hardwareAcceleration.nvidia.tolerations }}
+        {{- $affinity = mergeOverwrite $affinity .Values.tdarrNode.hardwareAcceleration.nvidia.affinity }}
       {{- end }}
       {{- with $nodeSelector }}
       nodeSelector:
