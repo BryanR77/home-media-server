@@ -1096,7 +1096,7 @@ tdarrNode:
           topologyKey: kubernetes.io/hostname
   podAnnotations: {}
   podLabels: {}
-  replicaCount: 2
+  replicaCount: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
