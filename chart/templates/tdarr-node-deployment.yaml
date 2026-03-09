@@ -106,7 +106,7 @@ spec:
         - name: cache
           {{- if .Values.tdarrNode.persistence.cache.enabled }}
           persistentVolumeClaim:
-            claimName: {{ default (printf "%s-tdarr-node-cache" (include "media-stack.fullname" .)) .Values.tdarrNode.persistence.cache.existingClaim }}
+            claimName: {{ default (printf "%s-cache" (include "media-stack.appFullname" (dict "root" . "app" "tdarr"))) .Values.tdarrNode.persistence.cache.existingClaim }}
           {{- else }}
           emptyDir: {}
           {{- end }}
@@ -140,33 +140,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-{{- end }}
-{{- if and .Values.tdarrNode.enabled .Values.tdarrNode.persistence.cache.enabled (not .Values.tdarrNode.persistence.cache.existingClaim) }}
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ include "media-stack.fullname" . }}-tdarr-node-cache
-  labels:
-    {{- include "media-stack.labels" . | nindent 4 }}
-    app.kubernetes.io/name: tdarr-node
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: tdarr-node-cache
-  {{- with .Values.tdarrNode.persistence.cache.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-spec:
-  accessModes:
-    - {{ .Values.tdarrNode.persistence.cache.accessMode }}
-  {{- if .Values.tdarrNode.persistence.cache.storageClass }}
-  {{- if (eq "-" .Values.tdarrNode.persistence.cache.storageClass) }}
-  storageClassName: ""
-  {{- else }}
-  storageClassName: {{ .Values.tdarrNode.persistence.cache.storageClass }}
-  {{- end }}
-  {{- end }}
-  resources:
-    requests:
-      storage: {{ .Values.tdarrNode.persistence.cache.size }}
 {{- end }}

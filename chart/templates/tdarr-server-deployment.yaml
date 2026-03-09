@@ -81,6 +81,10 @@ spec:
               mountPath: /app/logs
             - name: tmp
               mountPath: /tmp
+            {{- if .Values.tdarr.persistence.cache.enabled }}
+            - name: cache
+              mountPath: /temp
+            {{- end }}
             {{- if .Values.tdarr.persistence.media.enabled }}
             - name: media
               mountPath: /media
@@ -98,6 +102,11 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
+        {{- if .Values.tdarr.persistence.cache.enabled }}
+        - name: cache
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-cache" (include "media-stack.appFullname" (dict "root" . "app" "tdarr"))) .Values.tdarr.persistence.cache.existingClaim }}
+        {{- end }}
         {{- if .Values.tdarr.persistence.media.enabled }}
         - name: media
           persistentVolumeClaim:

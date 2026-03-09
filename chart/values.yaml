@@ -948,6 +948,17 @@ tdarr:
       existingClaim: "shared-media"
       # Mounted at /media so the server can scan libraries and dispatch work to nodes
 
+    # Shared transcode cache mounted at /temp on both the server and tdarrNode pods.
+    # Must use ReadWriteMany so both pods can mount it simultaneously.
+    # tdarrNode references this same PVC by default.
+    cache:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteMany
+      size: 50Gi
+      existingClaim: ""
+      annotations: {}
+
   resources:
     limits:
       cpu: 1000m
@@ -1083,16 +1094,12 @@ tdarrNode:
       existingClaim: "shared-media"
       # Mounted at /media inside the container; point Tdarr libraries here
 
-    # Optional dedicated PVC for in-progress transcode files (/temp).
-    # Uses an emptyDir (discarded on pod restart) when disabled.
-    # Enable and size generously if transcoding very large files.
+    # Transcode cache mounted at /temp. Shares the PVC created by tdarr.persistence.cache
+    # so the server can copy completed files after the node finishes transcoding.
+    # Override existingClaim only if you need to point at a different PVC.
     cache:
-      enabled: false
-      storageClass: ""
-      accessMode: ReadWriteOnce
-      size: 50Gi
+      enabled: true
       existingClaim: ""
-      annotations: {}
 
   resources:
     limits:
