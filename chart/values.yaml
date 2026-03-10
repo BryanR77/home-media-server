@@ -952,7 +952,7 @@ tdarr:
     # Must use ReadWriteMany so both pods can mount it simultaneously.
     # tdarrNode references this same PVC by default.
     cache:
-      enabled: true
+      enabled: false
       storageClass: ""
       accessMode: ReadWriteMany
       size: 50Gi
@@ -1098,7 +1098,7 @@ tdarrNode:
     # so the server can copy completed files after the node finishes transcoding.
     # Override existingClaim only if you need to point at a different PVC.
     cache:
-      enabled: true
+      enabled: false
       existingClaim: ""
 
   resources:
