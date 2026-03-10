@@ -955,7 +955,7 @@ tdarr:
       enabled: false
       storageClass: ""
       accessMode: ReadWriteMany
-      size: 50Gi
+      size: 150Gi
       existingClaim: ""
       annotations: {}
 
