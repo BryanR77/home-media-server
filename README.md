@@ -1,379 +1,250 @@
 # Home Media Server
 
-A unified Helm chart for deploying a complete media automation stack on Kubernetes.
+Helm chart and Argo CD manifests for running a full home media stack on Kubernetes.
 
-## Applications
+The chart name is `media-stack` (current chart version: `0.2.1`) and deploys a set of applications that share a common media library and unified routing.
 
-This chart deploys:
-- **Jellyfin**: Media server and streaming platform
-- **Plex**: Media server and streaming platform
-- **Sonarr**: TV series management and automation
-- **Radarr**: Movie management and automation
-- **Prowlarr**: Indexer manager for *arr apps
-- **SABnzbd**: Usenet download client
+## What This Deploys
 
-## Features
+Default enabled apps:
+- Jellyfin (media server)
+- Plex (media server)
+- Sonarr (TV automation)
+- Radarr (movie automation)
+- Prowlarr (indexer manager)
+- SABnzbd (download client)
+- Tautulli (Plex monitoring)
 
-- **Single Chart**: One `helm install` deploys all applications
-- **Unified Configuration**: All settings in one `values.yaml` file
-- **Shared Storage**: Common media PVC for all apps, with optional NFS backing
-- **Subdomain-Based Routing**: Each app gets its own subdomain (e.g., jellyfin.media.local, sonarr.media.local)
-- **GatewayAPI Support**: HTTPRoute resources for modern Kubernetes Gateway API ingress
-- **Centralized Settings**: Timezone and routing configured globally
+Optional apps:
+- Tdarr server (automated transcoding orchestration)
+- Tdarr Node worker (dedicated transcoding worker)
 
-## Quick Start
+## Repository Layout
 
-Install the chart:
-
-```bash
-helm install media-stack ./chart -n media --create-namespace
+```text
+home-media-server/
+  argocd/
+    application.yaml
+  chart/
+    Chart.yaml
+    values.yaml
+    templates/
+      *.yaml
 ```
 
-Upgrade an existing installation:
+## Deployment Options
+
+### 1) Helm (local/manual)
 
 ```bash
-helm upgrade media-stack ./chart -n media
+helm install media-stack ./chart -n home-media-server --create-namespace
 ```
 
-## Configuration
+Upgrade:
 
-### Global Settings
+```bash
+helm upgrade media-stack ./chart -n home-media-server
+```
 
-All apps share these global configurations in `values.yaml`:
+### 2) Argo CD Multi-Source (recommended)
+
+This repo includes `argocd/application.yaml` as a starter manifest. It expects:
+- Source 1: this chart repo (`path: chart`)
+- Source 2: a values repo mounted as `$values`
+
+The file is a template and intentionally includes this placeholder:
+- `https://github.com/<your-cluster-config-repo>.git`
+
+In your homelab setup, this is implemented in `homelab-cluster-apps/apps/home-media-server.yaml` and points at:
+- Chart repo: `BryanR77/home-media-server`
+- Values repo: `BryanR77/homelab-cluster-apps-values`
+- Values path: `$values/home-media-server/values.yaml`
+
+## Core Configuration
+
+All defaults live in `chart/values.yaml`.
+
+### Global
 
 ```yaml
 global:
   timezone: "UTC"
-  baseDomain: "media.local"  # Base domain for all subdomains
+  baseDomain: "media.local"
 
-  # GatewayAPI HTTPRoute (enabled by default)
   httpRoute:
     enabled: true
     parentRef:
       name: media-gateway
       namespace: default
-    annotations: {}
 
-  # Standard Ingress (alternative to HTTPRoute)
   ingress:
     enabled: false
-    className: ""
-    annotations: {}
-    tls: []
 ```
 
-### URL Structure
+### Routing Model
 
-With the default configuration, apps are accessible at their own subdomains:
-- Jellyfin: `https://jellyfin.media.local/`
-- Plex: `https://plex.media.local/`
-- Prowlarr: `https://prowlarr.media.local/`
-- Sonarr: `https://sonarr.media.local/`
-- Radarr: `https://radarr.media.local/`
-- SABnzbd: `https://sabnzbd.media.local/`
+Two routing modes are supported:
+- Gateway API HTTPRoute (default)
+- Kubernetes Ingress (optional)
 
-### Routing Options
+Important behavior:
+- HTTPRoute templates exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, SABnzbd, Tautulli, and Tdarr.
+- Ingress templates currently exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, and SABnzbd.
+- If you use Ingress-only mode and enable Tautulli or Tdarr, no Ingress is currently rendered for those two apps.
 
-The chart supports two routing methods:
-
-**GatewayAPI HTTPRoutes** (default, `global.httpRoute.enabled: true`):
-- Kubernetes Gateway API routing with subdomain-based routing
-- Requires a Gateway controller (e.g., Envoy Gateway, Contour, Istio) with a configured Gateway named `media-gateway`
-- Recommended for modern Kubernetes clusters
-
-**Standard Ingress** (alternative, `global.ingress.enabled: true`):
-- Kubernetes-native ingress for clusters with a traditional Ingress controller
-- Creates individual Ingress resources per app (one subdomain per Ingress)
-- Supports custom ingress classes and annotations
-
-**Note:** Enable only one routing method at a time (either HTTPRoute or Ingress, not both).
+Use only one routing mode at a time.
 
 ### Shared Media Storage
 
-By default, a single shared `ReadWriteMany` PVC is created and mounted by all apps:
+The chart creates a shared media PVC by default:
 
 ```yaml
 shared:
   media:
     enabled: true
-    storageClass: ""
     accessMode: ReadWriteMany
     size: 500Gi
 ```
 
-All apps mount this PVC and use subdirectories:
-- **SABnzbd**: Downloads to `/media/downloads`
-- **Sonarr**: Monitors `/media/downloads`, organizes to `/media/tv`
-- **Radarr**: Monitors `/media/downloads`, organizes to `/media/movies`
-- **Jellyfin**: Streams from `/media/tv`, `/media/movies`, etc.
-- **Plex**: Streams from `/data/tv`, `/data/movies`, etc.
-
-This approach avoids unnecessary file copies — Sonarr and Radarr can hardlink or move files within the same filesystem, which is instant and doesn't duplicate data.
-
-**NFS-backed shared storage:**
-
-To use an NFS share as the shared media PVC, enable NFS mode. This creates a static PersistentVolume bound directly to your NFS export:
+NFS-backed static PV mode:
 
 ```yaml
 shared:
   media:
-    enabled: true
-    accessMode: ReadWriteMany
-    size: 500Gi
     nfs:
       enabled: true
-      server: "192.168.1.100"   # NFS server IP or hostname
-      path: "/mnt/media"        # Exported NFS path
+      server: "192.168.1.100"
+      path: "/mnt/media"
 ```
 
-When NFS is enabled, `storageClass` is ignored and static binding is used instead.
+When NFS is enabled, static binding is used and `storageClass` is ignored.
 
-**Post-Installation Configuration:**
+### Default Hostnames
 
-After deploying, configure each app through its web UI:
+With defaults (`baseDomain: media.local`):
+- `jellyfin.media.local`
+- `plex.media.local`
+- `prowlarr.media.local`
+- `sonarr.media.local`
+- `radarr.media.local`
+- `sabnzbd.media.local`
+- `tautulli.media.local`
+- `tdarr.media.local` (when enabled)
 
-1. **SABnzbd** (`Settings → Folders`):
-   - Temporary Download Folder: `/media/downloads/incomplete`
-   - Completed Download Folder: `/media/downloads/complete`
+### Storage Paths Used by Apps
 
-2. **Sonarr** (`Settings → Media Management`):
-   - Root Folder: `/media/tv`
-   - Download Client settings should point to `/media/downloads/complete`
+Shared library conventions:
+- SABnzbd downloads: `/media/downloads`
+- Sonarr library: `/media/tv`
+- Radarr library: `/media/movies`
+- Jellyfin library root: `/media`
+- Plex library root: `/data` (same shared PVC mounted at a different path)
+- Tdarr server/node media mount: `/media`
+- Tdarr transcode cache: `/temp`
 
-3. **Radarr** (`Settings → Media Management`):
-   - Root Folder: `/media/movies`
-   - Download Client settings should point to `/media/downloads/complete`
+## Hardware Acceleration
 
-4. **Jellyfin** (`Dashboard → Libraries`):
-   - Add library with folder: `/media/tv` for TV shows
-   - Add library with folder: `/media/movies` for movies
+### Jellyfin and Plex
 
-5. **Plex** (`Settings → Libraries`):
-   - Add library with folder: `/data/tv` for TV shows
-   - Add library with folder: `/data/movies` for movies
+Both support:
+- Intel Quick Sync via `/dev/dri`
+- NVIDIA GPU resources (`nvidia.com/gpu`)
 
-### Per-App Subdomain Configuration
+Enable one acceleration mode per app at a time.
 
-Each application has its own subdomain and optional basePath settings:
+### Tdarr Node
 
-```yaml
-jellyfin:
-  enabled: true
-  ingress:
-    subdomain: "jellyfin"      # Accessible at jellyfin.media.local
-    basePath: ""               # No path prefix (serves from /)
+Tdarr Node supports:
+- Intel VAAPI via Intel device plugin resource (default `gpu.intel.com/i915`)
+- NVIDIA GPU resources (`nvidia.com/gpu`)
 
-plex:
-  enabled: true
-  ingress:
-    subdomain: "plex"          # Accessible at plex.media.local
-    basePath: ""
+The template merges acceleration-specific node selectors/tolerations/affinity with base scheduling settings.
 
-sonarr:
-  enabled: true
-  ingress:
-    subdomain: "sonarr"        # Accessible at sonarr.media.local
-    basePath: ""
+## Real Homelab Overrides (Current)
 
-radarr:
-  enabled: true
-  ingress:
-    subdomain: "radarr"        # Accessible at radarr.media.local
-    basePath: ""
+From `homelab-cluster-apps-values/home-media-server/values.yaml`:
+- `global.timezone`: `America/Phoenix`
+- `global.baseDomain`: `homelab.rawlinsnet.net`
+- Gateway parent ref: `homelab-gateway` in `default`
+- `jellyfin.enabled: false`
+- `plex.hardwareAcceleration.nvidia.enabled: true`
+- `tdarr.enabled: true`
+- `tdarrNode.enabled: true`
+- Shared media NFS enabled (`192.168.42.50:/mnt/media/shared-media`)
 
-prowlarr:
-  enabled: true
-  ingress:
-    subdomain: "prowlarr"      # Accessible at prowlarr.media.local
-    basePath: ""
+## App Setup After First Deploy
 
-sabnzbd:
-  enabled: true
-  ingress:
-    subdomain: "sabnzbd"       # Accessible at sabnzbd.media.local
-    basePath: ""
-```
+Recommended initial app-side paths:
 
-### Plex Claim Token
+1. SABnzbd folders:
+   - Temporary: `/media/downloads/incomplete`
+   - Completed: `/media/downloads/complete`
+2. Sonarr root folder: `/media/tv`
+3. Radarr root folder: `/media/movies`
+4. Jellyfin libraries: `/media/tv`, `/media/movies`
+5. Plex libraries: `/data/tv`, `/data/movies`
 
-To register your Plex server with your Plex account on first deploy, provide a claim token:
+## Notable Per-App Options
+
+- Plex claim token:
 
 ```yaml
 plex:
   claimToken: "claim-xxxxxxxxxxxxxxxxxxxx"
 ```
 
-Get your token from [plex.tv/claim](https://www.plex.tv/claim/). Tokens expire after 4 minutes, so deploy immediately after generating one.
-
-### Authentik / Internal Proxy
-
-- **Disable external routing for specific apps:** If you want Authentik's outpost (running inside the cluster) to proxy requests to an application directly, disable that app's ingress so no public HTTPRoute/Ingress is created. The application's `Service` stays `ClusterIP` and remains reachable inside the cluster by the outpost.
-
-- **Per-app settings (example):**
-
-```yaml
-sonarr:
-  ingress:
-    enabled: false    # don't create an external HTTPRoute/Ingress for Sonarr
-  service:
-    annotations:
-      internal.authentik.io/expose: "true"  # optional marker for your outpost
-
-radarr:
-  ingress:
-    enabled: false
-  service:
-    annotations: {}
-
-prowlarr:
-  ingress:
-    enabled: false
-  service:
-    annotations: {}
-
-sabnzbd:
-  ingress:
-    enabled: false
-  service:
-    annotations: {}
-```
-
-The outpost can reach services using Kubernetes DNS (e.g., `sonarr.media.svc.cluster.local`). Adding service annotations is optional but useful if you want the outpost to auto-discover targets.
-
-### Advanced Configuration
-
-**Using Existing PVCs:**
-
-```yaml
-jellyfin:
-  persistence:
-    config:
-      existingClaim: "my-jellyfin-config"
-
-shared:
-  media:
-    enabled: false  # Don't create new PVC
-
-sonarr:
-  persistence:
-    media:
-      existingClaim: "my-existing-media-pvc"
-```
-
-**SABnzbd Hostname Whitelist:**
-
-SABnzbd requires hostname whitelisting for security. The chart automatically includes the service names and route hostname. Add custom hostnames if needed:
+- SABnzbd hostname allowlist extension:
 
 ```yaml
 sabnzbd:
   hostnameWhitelist: "custom.domain.com,another.domain.com"
 ```
 
-**Custom Volumes and Volume Mounts:**
+The chart auto-populates service DNS names and, when HTTPRoute is enabled, app hostnames.
 
-Each app supports additional volumes and mounts via `extraVolumes` and `extraVolumeMounts`:
+- Extra volumes/mounts (pattern available on apps):
 
 ```yaml
 sonarr:
-  extraVolumes:
-    - name: scripts
-      configMap:
-        name: sonarr-scripts
-  extraVolumeMounts:
-    - name: scripts
-      mountPath: /scripts
-      readOnly: true
+  extraVolumes: []
+  extraVolumeMounts: []
 ```
 
-### Hardware Acceleration
+## Default Images
 
-Both Jellyfin and Plex support hardware-accelerated transcoding using Intel Quick Sync or NVIDIA NVENC. Both options are disabled by default.
-
-**Intel Quick Sync:**
-
-```yaml
-jellyfin:   # or plex:
-  hardwareAcceleration:
-    intelQuickSync:
-      enabled: true
-      devicePath: /dev/dri  # Default path
-      videoGroupId: 44      # Video group GID (44 on most systems, 39 on some)
-```
-
-This mounts the `/dev/dri` host device into the container and adds the video group for device access.
-
-**NVIDIA NVENC:**
-
-Requires the [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html) installed in your cluster.
-
-```yaml
-jellyfin:   # or plex:
-  hardwareAcceleration:
-    nvidia:
-      enabled: true
-      gpuLimit: 1                    # Number of GPUs to allocate
-      resourceName: nvidia.com/gpu   # GPU resource name
-      runtimeClassName: nvidia
-```
-
-**Important Notes:**
-- Enable only ONE acceleration method at a time (either Quick Sync or NVIDIA, not both)
-- After enabling hardware acceleration, configure it in the app's web UI under transcoding settings
-- When hardware acceleration is enabled, you can pin the pod to nodes with the hardware using the per-acceleration scheduling fields:
-
-```yaml
-jellyfin:
-  hardwareAcceleration:
-    intelQuickSync:
-      enabled: true
-      nodeSelector:
-        kubernetes.io/hostname: "node-with-igpu"
-      tolerations: []
-      affinity: {}
-
-    nvidia:
-      enabled: true
-      nodeSelector:
-        node-role.kubernetes.io/gpu: "true"
-      tolerations: []
-      affinity: {}
-```
-
-## Images
-
-This chart uses:
-- **Jellyfin**: `jellyfin/jellyfin:10.11.6` (official)
-- **Plex**: `ghcr.io/home-operations/plex:1.43.0`
-- **Prowlarr**: `ghcr.io/home-operations/prowlarr:2.3.2`
-- **Sonarr**: `ghcr.io/home-operations/sonarr:4.0.16`
-- **Radarr**: `ghcr.io/home-operations/radarr:6.1.1`
-- **SABnzbd**: `ghcr.io/home-operations/sabnzbd:4.5.5`
-
-The `home-operations` images are community-maintained and rootless-compatible. Specific versions are pinned by default but can be overridden in `values.yaml`.
+- `jellyfin/jellyfin:10.11.6`
+- `ghcr.io/home-operations/plex:1.43.0`
+- `ghcr.io/home-operations/prowlarr:2.3.3`
+- `ghcr.io/home-operations/sonarr:4.0.16`
+- `ghcr.io/home-operations/radarr:6.1.1`
+- `ghcr.io/home-operations/sabnzbd:4.5.5`
+- `ghcr.io/home-operations/tautulli:2.16.1`
+- `haveagitgat/tdarr:2.62.01`
+- `haveagitgat/tdarr_node:2.62.01`
 
 ## Requirements
 
-- Kubernetes 1.19+
+- Kubernetes cluster with dynamic storage and/or NFS access
 - Helm 3.x
-- Persistent volume provisioning
-- For shared downloads: Storage class supporting ReadWriteMany (or NFS)
-- For GatewayAPI HTTPRoutes: A Gateway API-compatible controller with a configured Gateway
+- Gateway API controller (for HTTPRoute mode) or an Ingress controller (for Ingress mode)
+- GPU device plugin/runtime when enabling hardware acceleration
 
-## Security
+## Security Defaults
 
-All containers run with:
-- Non-root user (`65534` by default, configurable per app)
-- Read-only root filesystem
-- Dropped capabilities
-- Seccomp profile (RuntimeDefault)
+Most app pods default to:
+- non-root runtime
+- dropped Linux capabilities
+- `seccompProfile: RuntimeDefault`
+
+Tdarr server/node are more permissive by default because of transcoding/runtime constraints.
 
 ## Uninstall
 
 ```bash
-helm uninstall media-stack -n media
+helm uninstall media-stack -n home-media-server
 ```
 
-Note: PVCs are not automatically deleted and must be removed manually if desired.
+PVC/PV cleanup is intentionally manual.
 
 ## License
 
