@@ -39,6 +39,8 @@ spec:
         supplementalGroups:
           - {{ .Values.plex.hardwareAcceleration.intelQuickSync.videoGroupId }}
         {{- end }}
+        {{- else if .Values.plex.hardwareAcceleration.nvidia.enabled }}
+        {{- toYaml .Values.plex.hardwareAcceleration.nvidia.podSecurityContext | nindent 8 }}
         {{- else }}
         {{- toYaml .Values.plex.podSecurityContext | nindent 8 }}
         {{- end }}
@@ -49,7 +51,11 @@ spec:
       containers:
         - name: plex
           securityContext:
+            {{- if .Values.plex.hardwareAcceleration.nvidia.enabled }}
+            {{- toYaml .Values.plex.hardwareAcceleration.nvidia.securityContext | nindent 12 }}
+            {{- else }}
             {{- toYaml .Values.plex.securityContext | nindent 12 }}
+            {{- end }}
           image: "{{ .Values.plex.image.repository }}:{{ .Values.plex.image.tag }}"
           imagePullPolicy: {{ .Values.plex.image.pullPolicy }}
           env:

@@ -289,6 +289,20 @@ plex:
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      # Security contexts used when NVIDIA is enabled.
+      # The NVIDIA container toolkit (libnvidia-container) only mounts
+      # /dev/nvidia-caps/ compute capability devices when the container runs as
+      # UID 0.  Without those devices, driver >= 515 returns CUDA_ERROR_NO_DEVICE
+      # even though /dev/nvidia0 and nvidia-smi are accessible.  These overrides
+      # intentionally omit runAsNonRoot / runAsUser so the container starts as
+      # root, letting the toolkit set up GPU access before Plex drops privileges
+      # via its entrypoint.
+      podSecurityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: "OnRootMismatch"
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
 
   persistence:
     config:
