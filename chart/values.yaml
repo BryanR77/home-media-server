@@ -298,9 +298,13 @@ plex:
       # root, letting the toolkit set up GPU access before Plex drops privileges
       # via its entrypoint.
       podSecurityContext:
+        runAsUser: 0
+        runAsGroup: 0
         fsGroup: 65534
         fsGroupChangePolicy: "OnRootMismatch"
       securityContext:
+        runAsUser: 0
+        runAsNonRoot: false
         allowPrivilegeEscalation: false
         readOnlyRootFilesystem: true
 
