@@ -18,6 +18,10 @@ spec:
     kind: PersistentVolumeClaim
     name: shared-media
     namespace: {{ .Release.Namespace }}
+  {{- with .Values.shared.media.nfs.mountOptions }}
+  mountOptions:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   nfs:
     server: {{ .Values.shared.media.nfs.server | quote }}
     path: {{ .Values.shared.media.nfs.path | quote }}
