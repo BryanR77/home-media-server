@@ -43,6 +43,12 @@ shared:
       enabled: false
       server: ""   # NFS server IP or hostname (e.g. "192.168.1.100")
       path: ""     # Exported NFS path (e.g. "/mnt/media")
+      mountOptions:
+        - nconnect=8
+        - rsize=1048576
+        - wsize=1048576
+        - hard
+        - noatime
   
 
 # Jellyfin - Media Server
