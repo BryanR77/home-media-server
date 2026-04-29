@@ -1201,7 +1201,7 @@ ffmpegNormalize:
 
   image:
     repository: python
-    tag: "3.12-slim"
+    tag: "3.14-slim"
     pullPolicy: IfNotPresent
 
   serviceAccount:
