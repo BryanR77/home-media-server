@@ -1,0 +1,101 @@
+{{- if .Values.ffmpegNormalize.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ printf "%s-ffmpeg-normalize" (include "media-stack.fullname" .) }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "ffmpeg-normalize") | nindent 4 }}
+spec:
+  schedule: {{ .Values.ffmpegNormalize.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: {{ .Values.ffmpegNormalize.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: {{ .Values.ffmpegNormalize.ttlSecondsAfterFinished }}
+      backoffLimit: 0
+      template:
+        metadata:
+          {{- with .Values.ffmpegNormalize.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          labels:
+            {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "ffmpeg-normalize") | nindent 12 }}
+            {{- with .Values.ffmpegNormalize.podLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ default (printf "%s-ffmpeg-normalize" (include "media-stack.fullname" .)) .Values.ffmpegNormalize.serviceAccount.name }}
+          securityContext:
+            {{- toYaml .Values.ffmpegNormalize.podSecurityContext | nindent 12 }}
+          dnsConfig:
+            options:
+              - name: ndots
+                value: "1"
+          containers:
+            - name: ffmpeg-normalize
+              securityContext:
+                {{- toYaml .Values.ffmpegNormalize.securityContext | nindent 16 }}
+              image: "{{ .Values.ffmpegNormalize.image.repository }}:{{ .Values.ffmpegNormalize.image.tag }}"
+              imagePullPolicy: {{ .Values.ffmpegNormalize.image.pullPolicy }}
+              command: ["/bin/bash", "/scripts/normalize.sh"]
+              env:
+                - name: TZ
+                  value: {{ include "media-stack.timezone" . | quote }}
+                - name: TARGET_I
+                  value: {{ .Values.ffmpegNormalize.targetI | quote }}
+                - name: TARGET_TP
+                  value: {{ .Values.ffmpegNormalize.targetTP | quote }}
+                - name: TARGET_LRA
+                  value: {{ .Values.ffmpegNormalize.targetLRA | quote }}
+                - name: AUDIO_CODEC
+                  value: {{ .Values.ffmpegNormalize.audioCodec | quote }}
+                - name: AUDIO_BITRATE
+                  value: {{ .Values.ffmpegNormalize.audioBitrate | quote }}
+                - name: DRY_RUN
+                  value: {{ .Values.ffmpegNormalize.dryRun | toString | quote }}
+                - name: MEDIA_PATHS
+                  value: {{ .Values.ffmpegNormalize.mediaPaths | join " " | quote }}
+                - name: EXTENSIONS
+                  value: {{ .Values.ffmpegNormalize.extensions | quote }}
+              resources:
+                {{- toYaml .Values.ffmpegNormalize.resources | nindent 16 }}
+              volumeMounts:
+                - name: media
+                  mountPath: /media
+                - name: scripts
+                  mountPath: /scripts
+                - name: tmp
+                  mountPath: /tmp
+                {{- with .Values.ffmpegNormalize.extraVolumeMounts }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+          volumes:
+            - name: media
+              persistentVolumeClaim:
+                claimName: shared-media
+            - name: scripts
+              configMap:
+                name: {{ printf "%s-ffmpeg-normalize-script" (include "media-stack.fullname" .) }}
+                defaultMode: 0755
+            - name: tmp
+              emptyDir: {}
+            {{- with .Values.ffmpegNormalize.extraVolumes }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.ffmpegNormalize.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.ffmpegNormalize.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.ffmpegNormalize.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

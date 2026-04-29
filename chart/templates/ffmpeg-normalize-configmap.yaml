@@ -1,0 +1,113 @@
+{{- if .Values.ffmpegNormalize.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-ffmpeg-normalize-script" (include "media-stack.fullname" .) }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "ffmpeg-normalize") | nindent 4 }}
+data:
+  normalize.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    TARGET_I="${TARGET_I:--23}"
+    TARGET_TP="${TARGET_TP:--2}"
+    TARGET_LRA="${TARGET_LRA:-7}"
+    AUDIO_CODEC="${AUDIO_CODEC:-aac}"
+    AUDIO_BITRATE="${AUDIO_BITRATE:-192k}"
+    DRY_RUN="${DRY_RUN:-false}"
+    MEDIA_PATHS="${MEDIA_PATHS:-/media/movies /media/tv}"
+    EXTENSIONS="${EXTENSIONS:-mkv mp4 avi m4v mov}"
+
+    # Install ffmpeg and ffmpeg-normalize if not already present.
+    # For faster runs, build a custom image with these pre-installed:
+    #   FROM python:3.12-slim
+    #   RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    #       && pip install ffmpeg-normalize \
+    #       && rm -rf /var/lib/apt/lists/*
+    if ! command -v ffmpeg-normalize &>/dev/null; then
+      echo "[setup] Installing ffmpeg and ffmpeg-normalize (consider using a pre-built image)..."
+      apt-get update -qq
+      DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends ffmpeg
+      pip install -q ffmpeg-normalize
+      rm -rf /var/lib/apt/lists/*
+    fi
+
+    echo "=== Audio Normalization Started: $(date) ==="
+    echo "Target: ${TARGET_I} LUFS / ${TARGET_TP} dBTP / ${TARGET_LRA} LU"
+    echo "Codec: ${AUDIO_CODEC} @ ${AUDIO_BITRATE}"
+    echo "Paths: ${MEDIA_PATHS}"
+    echo "Dry run: ${DRY_RUN}"
+
+    IFS=' ' read -ra PATHS_ARR <<< "$MEDIA_PATHS"
+
+    # Clean up leftover temp files from any previously interrupted run
+    for p in "${PATHS_ARR[@]}"; do
+      [[ -d "$p" ]] && find "$p" -name "*.normalize-tmp.*" -type f -delete 2>/dev/null || true
+    done
+
+    # Build find -name predicates for each extension
+    FIND_ARGS=()
+    first=1
+    for ext in $EXTENSIONS; do
+      [[ $first -eq 0 ]] && FIND_ARGS+=(-o)
+      FIND_ARGS+=(-name "*.${ext}")
+      first=0
+    done
+
+    NORMALIZED=0
+    SKIPPED=0
+    FAILED=0
+
+    normalize_file() {
+      local input="$1"
+      local ext="${input##*.}"
+      local tmpout="${input%.*}.normalize-tmp.${ext}"
+
+      echo ""
+      echo "Processing: ${input}"
+
+      if [[ "$DRY_RUN" == "true" ]]; then
+        ffmpeg-normalize "$input" \
+          -nt ebu \
+          -t "$TARGET_I" \
+          -lrt "$TARGET_LRA" \
+          --true-peak "$TARGET_TP" \
+          --dry-run 2>&1 || true
+        SKIPPED=$((SKIPPED + 1))
+        return 0
+      fi
+
+      # Normalize to a temp file in the same directory, then atomically replace.
+      # -f forces overwrite of the temp file if it somehow pre-exists.
+      # ffmpeg-normalize copies all non-audio streams (video, subtitles, etc.) by default.
+      if ffmpeg-normalize "$input" \
+          -o "$tmpout" \
+          -nt ebu \
+          -t "$TARGET_I" \
+          -lrt "$TARGET_LRA" \
+          --true-peak "$TARGET_TP" \
+          -c:a "$AUDIO_CODEC" \
+          -b:a "$AUDIO_BITRATE" \
+          --progress \
+          -f; then
+        mv "$tmpout" "$input"
+        NORMALIZED=$((NORMALIZED + 1))
+        echo "  Done: ${input}"
+      else
+        rm -f "$tmpout"
+        echo "  FAILED: ${input}"
+        FAILED=$((FAILED + 1))
+      fi
+    }
+
+    while IFS= read -r -d '' file; do
+      normalize_file "$file" || true
+    done < <(find "${PATHS_ARR[@]}" -type f \( "${FIND_ARGS[@]}" \) ! -name "*.normalize-tmp.*" -print0 2>/dev/null)
+
+    echo ""
+    echo "=== Normalization Complete: $(date) ==="
+    echo "Normalized: ${NORMALIZED} | Skipped/DryRun: ${SKIPPED} | Failed: ${FAILED}"
+
+    [[ $FAILED -gt 0 ]] && exit 1 || exit 0
+{{- end }}

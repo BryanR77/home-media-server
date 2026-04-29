@@ -1151,3 +1151,94 @@ tdarrNode:
   extraEnv: []
   extraVolumes: []
   extraVolumeMounts: []
+
+# ffmpeg-normalize - Nightly EBU R128 audio normalization across the media library
+#
+# Runs as a Kubernetes CronJob and walks configured media directories, normalizing
+# audio loudness to the EBU R128 standard (-23 LUFS) using ffmpeg's loudnorm filter.
+# Each file is normalized to a temp file in the same directory, then atomically
+# replaced, so an interrupted run leaves no partially-written files.
+#
+# GPU note: NVENC/NVDEC are video-only hardware codecs. The loudnorm audio filter
+# is pure CPU signal processing — no GPU acceleration exists for audio normalization.
+#
+# Audio re-encoding: loudnorm always re-encodes audio. The default codec is AAC
+# (widely compatible). If your library uses AC3/DTS/Atmos, consider the quality
+# trade-off, or set audioCodec to match your source format.
+#
+# Image: the default python:3.12-slim installs ffmpeg + ffmpeg-normalize at each
+# run (~60s overhead). For faster startup, build a dedicated image:
+#   FROM python:3.12-slim
+#   RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+#       && pip install ffmpeg-normalize \
+#       && rm -rf /var/lib/apt/lists/*
+ffmpegNormalize:
+  enabled: false
+
+  # Cron schedule — default: 2:00 AM daily
+  schedule: "0 2 * * *"
+
+  # EBU R128 loudness targets
+  targetI: "-23"    # integrated loudness (LUFS)
+  targetTP: "-2"    # true peak (dBTP)
+  targetLRA: "7"    # loudness range (LU)
+
+  # Audio codec and bitrate for the re-encoded audio streams.
+  # Common options: aac (default, widely compatible), ac3, libopus
+  audioCodec: "aac"
+  audioBitrate: "192k"
+
+  # Media directories on the shared-media PVC to scan (space-separated)
+  mediaPaths:
+    - /media/movies
+    - /media/tv
+
+  # File extensions to process (space-separated string)
+  extensions: "mkv mp4 avi m4v mov"
+
+  # Set to true to run in analysis-only mode — reports loudness without modifying files
+  dryRun: false
+
+  image:
+    repository: python
+    tag: "3.12-slim"
+    pullPolicy: IfNotPresent
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    fsGroup: 65534
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+    supplementalGroups: []
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 256Mi
+
+  # Maximum wall-clock time the job may run before Kubernetes terminates it.
+  # 8 hours is generous for large libraries; tune down once you know your runtime.
+  activeDeadlineSeconds: 28800
+
+  # How long to keep finished job pods for log inspection before auto-deletion.
+  ttlSecondsAfterFinished: 3600
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  extraVolumes: []
+  extraVolumeMounts: []
