@@ -65,7 +65,7 @@ jellyfin:
   
   image:
     repository: jellyfin/jellyfin
-    tag: "10.11.10"
+    tag: "10.11.11"
     pullPolicy: IfNotPresent
 
   serviceAccount:
