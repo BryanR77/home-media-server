@@ -829,7 +829,7 @@ tautulli:
 
   image:
     repository: ghcr.io/home-operations/tautulli
-    tag: "2.17.1"
+    tag: "2.17.2"
     pullPolicy: Always
 
   serviceAccount:
