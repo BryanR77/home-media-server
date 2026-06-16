@@ -116,7 +116,12 @@ jellyfin:
     # Intel Quick Sync (requires /dev/dri device)
     intelQuickSync:
       enabled: false
-      # Device path to mount (typically /dev/dri)
+      # Use Intel GPU device plugin (resource-based) instead of hostPath volume.
+      # Requires the Intel Device Plugin for Kubernetes to be installed.
+      # Compatible with PodSecurity baseline policy; hostPath mode is not.
+      useDevicePlugin: false
+      devicePluginResourceName: gpu.intel.com/i915
+      # Device path to mount - only used when useDevicePlugin is false
       devicePath: /dev/dri
       # Video group GID for /dev/dri access (typically 44 on most Linux systems, 39 on some)
       # Set to null to auto-detect or override with specific GID
@@ -262,7 +267,12 @@ plex:
     # Intel Quick Sync (requires /dev/dri device)
     intelQuickSync:
       enabled: false
-      # Device path to mount (typically /dev/dri)
+      # Use Intel GPU device plugin (resource-based) instead of hostPath volume.
+      # Requires the Intel Device Plugin for Kubernetes to be installed.
+      # Compatible with PodSecurity baseline policy; hostPath mode is not.
+      useDevicePlugin: false
+      devicePluginResourceName: gpu.intel.com/i915
+      # Device path to mount - only used when useDevicePlugin is false
       devicePath: /dev/dri
       # Video group GID for /dev/dri access (typically 44 on most Linux systems, 39 on some)
       # Set to null to auto-detect or override with specific GID
