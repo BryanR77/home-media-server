@@ -604,7 +604,7 @@ radarr:
   
   image:
     repository: ghcr.io/home-operations/radarr
-    tag: "6.3.0"
+    tag: "6.4.0"
     pullPolicy: Always
 
   serviceAccount:
