@@ -495,7 +495,7 @@ sonarr:
   
   image:
     repository: ghcr.io/home-operations/sonarr
-    tag: "4.0.18"
+    tag: "4.0.19"
     pullPolicy: Always
 
   serviceAccount:
