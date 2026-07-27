@@ -391,7 +391,7 @@ prowlarr:
   
   image:
     repository: ghcr.io/home-operations/prowlarr
-    tag: "2.5.2"
+    tag: "2.6.0"
     pullPolicy: Always
 
   serviceAccount:
