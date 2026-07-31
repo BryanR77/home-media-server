@@ -191,4 +191,36 @@ spec:
                 port:
                   number: {{ .Values.sabnzbd.service.port }}
 {{- end }}
+{{- if and .Values.seerr.enabled .Values.seerr.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "seerr") }}
+  labels:
+    {{- include "media-stack.labels" . | nindent 4 }}
+  {{- with .Values.global.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.global.ingress.className }}
+  ingressClassName: {{ .Values.global.ingress.className }}
+  {{- end }}
+  {{- if .Values.global.ingress.tls }}
+  tls:
+    {{- toYaml .Values.global.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.seerr.ingress.subdomain }}.{{ .Values.global.baseDomain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "media-stack.appFullname" (dict "root" . "app" "seerr") }}
+                port:
+                  number: {{ .Values.seerr.service.port }}
+{{- end }}
 {{- end }}

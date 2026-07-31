@@ -917,6 +917,116 @@ tautulli:
   extraVolumes: []
   extraVolumeMounts: []
 
+# Seerr - Media request management (Jellyfin/Plex/Emby, Sonarr/Radarr integration)
+seerr:
+  enabled: true
+
+  # Subdomain configuration
+  ingress:
+    enabled: true
+    subdomain: "seerr"
+    basePath: ""
+
+  image:
+    repository: ghcr.io/seerr-team/seerr
+    tag: "v3.4.1"
+    pullPolicy: IfNotPresent
+
+  # Log verbosity: error, warn, info, debug
+  logLevel: "info"
+
+  # Additional environment variables (optional)
+  extraEnv: []
+  # - name: EXAMPLE_VAR
+  #   value: "example_value"
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  # Seerr's image runs as the built-in "node" user (UID/GID 1000); it does not
+  # support arbitrary PUID/PGID like the home-operations images.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    annotations: {}
+    type: ClusterIP
+    port: 5055
+    targetPort: 5055
+
+  persistence:
+    config:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      existingClaim: ""
+      annotations: {}
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /api/v1/settings/public
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /api/v1/settings/public
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  startupProbe:
+    httpGet:
+      path: /api/v1/settings/public
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  extraVolumes: []
+  extraVolumeMounts: []
+
 # Tdarr - Automated media transcoding server
 tdarr:
   enabled: false

@@ -14,6 +14,7 @@ Default enabled apps:
 - Prowlarr (indexer manager)
 - SABnzbd (download client)
 - Tautulli (Plex monitoring)
+- Seerr (media request management)
 
 Optional apps:
 - Tdarr server (automated transcoding orchestration)
@@ -88,8 +89,8 @@ Two routing modes are supported:
 - Kubernetes Ingress (optional)
 
 Important behavior:
-- HTTPRoute templates exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, SABnzbd, Tautulli, and Tdarr.
-- Ingress templates currently exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, and SABnzbd.
+- HTTPRoute templates exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, SABnzbd, Seerr, Tautulli, and Tdarr.
+- Ingress templates currently exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, SABnzbd, and Seerr.
 - If you use Ingress-only mode and enable Tautulli or Tdarr, no Ingress is currently rendered for those two apps.
 
 Use only one routing mode at a time.
@@ -129,6 +130,7 @@ With defaults (`baseDomain: media.local`):
 - `radarr.media.local`
 - `sabnzbd.media.local`
 - `tautulli.media.local`
+- `seerr.media.local`
 - `tdarr.media.local` (when enabled)
 
 ### Storage Paths Used by Apps
@@ -183,6 +185,7 @@ Recommended initial app-side paths:
 3. Radarr root folder: `/media/movies`
 4. Jellyfin libraries: `/media/tv`, `/media/movies`
 5. Plex libraries: `/data/tv`, `/data/movies`
+6. Seerr: sign in against Jellyfin/Plex/Emby, then connect Sonarr and Radarr via their in-cluster service DNS (e.g. `http://<release>-sonarr:8989`, `http://<release>-radarr:7878`)
 
 ## Notable Per-App Options
 
@@ -219,6 +222,7 @@ sonarr:
 - `ghcr.io/home-operations/radarr:6.1.1`
 - `ghcr.io/home-operations/sabnzbd:4.5.5`
 - `ghcr.io/home-operations/tautulli:2.16.1`
+- `ghcr.io/seerr-team/seerr:v3.4.1`
 - `haveagitgat/tdarr:2.62.01`
 - `haveagitgat/tdarr_node:2.62.01`
 
