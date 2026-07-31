@@ -1027,6 +1027,145 @@ seerr:
   extraVolumes: []
   extraVolumeMounts: []
 
+# Stash - Media organizer/tagger
+stash:
+  enabled: true
+
+  # Subdomain configuration
+  ingress:
+    enabled: true
+    subdomain: "stash"
+    basePath: ""
+
+  image:
+    repository: stashapp/stash
+    tag: "latest"
+    pullPolicy: Always
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  # Upstream image runs as root (config lives at /root/.stash) and, unlike the
+  # home-operations *arr images, has no PUID/PGID support.
+  podSecurityContext:
+    runAsNonRoot: false
+    fsGroup: 65534
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+
+  service:
+    annotations: {}
+    type: ClusterIP
+    port: 9999
+    targetPort: 9999
+
+  # Additional environment variables (optional)
+  extraEnv: []
+
+  persistence:
+    config:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      existingClaim: ""
+      annotations: {}
+      # Mounted at /root/.stash - configs, scrapers, plugins
+
+    metadata:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      existingClaim: ""
+      annotations: {}
+      # Mounted at /metadata
+
+    cache:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      existingClaim: ""
+      annotations: {}
+      # Mounted at /cache
+
+    blobs:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      existingClaim: ""
+      annotations: {}
+      # Mounted at /blobs - binary blob storage (covers, images)
+
+    generated:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 20Gi
+      existingClaim: ""
+      annotations: {}
+      # Mounted at /generated - screenshots, previews, transcodes, sprites
+
+    media:
+      enabled: true
+      existingClaim: "shared-media"
+      # Mounted at /data - point Stash's library at /data/<subfolder>
+
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+
+  livenessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 6
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 6
+
+  startupProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 10
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  extraVolumes: []
+  extraVolumeMounts: []
+
 # Tdarr - Automated media transcoding server
 tdarr:
   enabled: false

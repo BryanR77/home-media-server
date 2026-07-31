@@ -1,0 +1,138 @@
+{{- if .Values.stash.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "stash") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "stash") | nindent 4 }}
+spec:
+  replicas: {{ .Values.stash.replicaCount }}
+  strategy:
+    {{- toYaml .Values.stash.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "stash") | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.stash.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "stash") | nindent 8 }}
+        {{- with .Values.stash.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "stash") }}
+      securityContext:
+        {{- toYaml .Values.stash.podSecurityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      containers:
+        - name: stash
+          securityContext:
+            {{- toYaml .Values.stash.securityContext | nindent 12 }}
+          image: "{{ .Values.stash.image.repository }}:{{ .Values.stash.image.tag }}"
+          imagePullPolicy: {{ .Values.stash.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+            - name: STASH_STASH
+              value: "/data/"
+            - name: STASH_GENERATED
+              value: "/generated/"
+            - name: STASH_METADATA
+              value: "/metadata/"
+            - name: STASH_CACHE
+              value: "/cache/"
+            - name: STASH_PORT
+              value: {{ .Values.stash.service.targetPort | quote }}
+            {{- with .Values.stash.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.stash.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.stash.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.stash.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.stash.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.stash.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /root/.stash
+            {{- if .Values.stash.persistence.metadata.enabled }}
+            - name: metadata
+              mountPath: /metadata
+            {{- end }}
+            {{- if .Values.stash.persistence.cache.enabled }}
+            - name: cache
+              mountPath: /cache
+            {{- end }}
+            {{- if .Values.stash.persistence.blobs.enabled }}
+            - name: blobs
+              mountPath: /blobs
+            {{- end }}
+            {{- if .Values.stash.persistence.generated.enabled }}
+            - name: generated
+              mountPath: /generated
+            {{- end }}
+            {{- if .Values.stash.persistence.media.enabled }}
+            - name: media
+              mountPath: /data
+            {{- end }}
+            {{- with .Values.stash.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-config" (include "media-stack.appFullname" (dict "root" . "app" "stash"))) .Values.stash.persistence.config.existingClaim }}
+        {{- if .Values.stash.persistence.metadata.enabled }}
+        - name: metadata
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-metadata" (include "media-stack.appFullname" (dict "root" . "app" "stash"))) .Values.stash.persistence.metadata.existingClaim }}
+        {{- end }}
+        {{- if .Values.stash.persistence.cache.enabled }}
+        - name: cache
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-cache" (include "media-stack.appFullname" (dict "root" . "app" "stash"))) .Values.stash.persistence.cache.existingClaim }}
+        {{- end }}
+        {{- if .Values.stash.persistence.blobs.enabled }}
+        - name: blobs
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-blobs" (include "media-stack.appFullname" (dict "root" . "app" "stash"))) .Values.stash.persistence.blobs.existingClaim }}
+        {{- end }}
+        {{- if .Values.stash.persistence.generated.enabled }}
+        - name: generated
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-generated" (include "media-stack.appFullname" (dict "root" . "app" "stash"))) .Values.stash.persistence.generated.existingClaim }}
+        {{- end }}
+        {{- if .Values.stash.persistence.media.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Values.stash.persistence.media.existingClaim }}
+        {{- end }}
+        {{- with .Values.stash.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.stash.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.stash.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.stash.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,21 @@
+{{- if .Values.stash.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "stash") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "stash") | nindent 4 }}
+  {{- with .Values.stash.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.stash.service.type }}
+  ports:
+    - port: {{ .Values.stash.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "stash") | nindent 4 }}
+{{- end }}

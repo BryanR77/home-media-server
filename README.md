@@ -2,7 +2,7 @@
 
 Helm chart and Argo CD manifests for running a full home media stack on Kubernetes.
 
-The chart name is `media-stack` (current chart version: `0.2.1`) and deploys a set of applications that share a common media library and unified routing.
+The chart name is `media-stack` (current chart version: `0.3.0`) and deploys a set of applications that share a common media library and unified routing.
 
 ## What This Deploys
 
@@ -15,6 +15,7 @@ Default enabled apps:
 - SABnzbd (download client)
 - Tautulli (Plex monitoring)
 - Seerr (media request management)
+- Stash (media organizer/tagger)
 
 Optional apps:
 - Tdarr server (automated transcoding orchestration)
@@ -89,9 +90,9 @@ Two routing modes are supported:
 - Kubernetes Ingress (optional)
 
 Important behavior:
-- HTTPRoute templates exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, SABnzbd, Seerr, Tautulli, and Tdarr.
+- HTTPRoute templates exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, SABnzbd, Seerr, Tautulli, Stash, and Tdarr.
 - Ingress templates currently exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, SABnzbd, and Seerr.
-- If you use Ingress-only mode and enable Tautulli or Tdarr, no Ingress is currently rendered for those two apps.
+- If you use Ingress-only mode and enable Tautulli, Stash, or Tdarr, no Ingress is currently rendered for those apps.
 
 Use only one routing mode at a time.
 
@@ -131,6 +132,7 @@ With defaults (`baseDomain: media.local`):
 - `sabnzbd.media.local`
 - `tautulli.media.local`
 - `seerr.media.local`
+- `stash.media.local`
 - `tdarr.media.local` (when enabled)
 
 ### Storage Paths Used by Apps
@@ -141,6 +143,7 @@ Shared library conventions:
 - Radarr library: `/media/movies`
 - Jellyfin library root: `/media`
 - Plex library root: `/data` (same shared PVC mounted at a different path)
+- Stash library root: `/data` (same shared PVC mounted at a different path; Stash-specific config/metadata/cache/blobs/generated dirs are dedicated PVCs)
 - Tdarr server/node media mount: `/media`
 - Tdarr transcode cache: `/temp`
 
@@ -223,6 +226,7 @@ sonarr:
 - `ghcr.io/home-operations/sabnzbd:4.5.5`
 - `ghcr.io/home-operations/tautulli:2.16.1`
 - `ghcr.io/seerr-team/seerr:v3.4.1`
+- `stashapp/stash:latest`
 - `haveagitgat/tdarr:2.62.01`
 - `haveagitgat/tdarr_node:2.62.01`
 
@@ -240,7 +244,7 @@ Most app pods default to:
 - dropped Linux capabilities
 - `seccompProfile: RuntimeDefault`
 
-Tdarr server/node are more permissive by default because of transcoding/runtime constraints.
+Tdarr server/node and Stash are more permissive by default: Tdarr because of transcoding/runtime constraints, and Stash because the upstream image runs as root with no PUID/PGID support.
 
 ## Uninstall
 

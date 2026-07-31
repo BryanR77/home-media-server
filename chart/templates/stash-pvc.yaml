@@ -1,0 +1,147 @@
+{{- if .Values.stash.enabled }}
+{{- if .Values.stash.persistence.config.enabled }}
+{{- if not .Values.stash.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "stash") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "stash") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.stash.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.stash.persistence.config.accessMode }}
+  {{- if .Values.stash.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.stash.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.stash.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.stash.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- if .Values.stash.persistence.metadata.enabled }}
+{{- if not .Values.stash.persistence.metadata.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "stash") }}-metadata
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "stash") | nindent 4 }}
+    app.kubernetes.io/component: metadata
+  {{- with .Values.stash.persistence.metadata.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.stash.persistence.metadata.accessMode }}
+  {{- if .Values.stash.persistence.metadata.storageClass }}
+  {{- if (eq "-" .Values.stash.persistence.metadata.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.stash.persistence.metadata.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.stash.persistence.metadata.size }}
+{{- end }}
+{{- end }}
+{{- if .Values.stash.persistence.cache.enabled }}
+{{- if not .Values.stash.persistence.cache.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "stash") }}-cache
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "stash") | nindent 4 }}
+    app.kubernetes.io/component: cache
+  {{- with .Values.stash.persistence.cache.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.stash.persistence.cache.accessMode }}
+  {{- if .Values.stash.persistence.cache.storageClass }}
+  {{- if (eq "-" .Values.stash.persistence.cache.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.stash.persistence.cache.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.stash.persistence.cache.size }}
+{{- end }}
+{{- end }}
+{{- if .Values.stash.persistence.blobs.enabled }}
+{{- if not .Values.stash.persistence.blobs.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "stash") }}-blobs
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "stash") | nindent 4 }}
+    app.kubernetes.io/component: blobs
+  {{- with .Values.stash.persistence.blobs.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.stash.persistence.blobs.accessMode }}
+  {{- if .Values.stash.persistence.blobs.storageClass }}
+  {{- if (eq "-" .Values.stash.persistence.blobs.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.stash.persistence.blobs.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.stash.persistence.blobs.size }}
+{{- end }}
+{{- end }}
+{{- if .Values.stash.persistence.generated.enabled }}
+{{- if not .Values.stash.persistence.generated.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "stash") }}-generated
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "stash") | nindent 4 }}
+    app.kubernetes.io/component: generated
+  {{- with .Values.stash.persistence.generated.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.stash.persistence.generated.accessMode }}
+  {{- if .Values.stash.persistence.generated.storageClass }}
+  {{- if (eq "-" .Values.stash.persistence.generated.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.stash.persistence.generated.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.stash.persistence.generated.size }}
+{{- end }}
+{{- end }}
+{{- end }}

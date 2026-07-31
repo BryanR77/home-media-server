@@ -215,6 +215,33 @@ spec:
         - name: {{ include "media-stack.appFullname" (dict "root" . "app" "tautulli") }}
           port: {{ .Values.tautulli.service.port }}
 {{- end }}
+{{- if .Values.stash.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "stash") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "stash") | nindent 4 }}
+  {{- with .Values.global.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Values.global.httpRoute.parentRef.name }}
+      namespace: {{ .Values.global.httpRoute.parentRef.namespace }}
+  hostnames:
+    - "{{ .Values.stash.ingress.subdomain }}.{{ .Values.global.baseDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "media-stack.appFullname" (dict "root" . "app" "stash") }}
+          port: {{ .Values.stash.service.port }}
+{{- end }}
 {{- if .Values.tdarr.enabled }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
