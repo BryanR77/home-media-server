@@ -228,6 +228,9 @@ plex:
     enabled: true
     subdomain: "plex"
     basePath: ""
+    # Additional fully-qualified hostnames to route to Plex alongside
+    # "<subdomain>.<global.baseDomain>" (e.g. a second public domain).
+    extraHostnames: []
   
   image:
     repository: ghcr.io/home-operations/plex
