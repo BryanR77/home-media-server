@@ -137,6 +137,33 @@ spec:
         - name: {{ include "media-stack.appFullname" (dict "root" . "app" "radarr") }}
           port: {{ .Values.radarr.service.port }}
 {{- end }}
+{{- if .Values.bazarr.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "bazarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "bazarr") | nindent 4 }}
+  {{- with .Values.global.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Values.global.httpRoute.parentRef.name }}
+      namespace: {{ .Values.global.httpRoute.parentRef.namespace }}
+  hostnames:
+    - "{{ .Values.bazarr.ingress.subdomain }}.{{ .Values.global.baseDomain }}"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "media-stack.appFullname" (dict "root" . "app" "bazarr") }}
+          port: {{ .Values.bazarr.service.port }}
+{{- end }}
 {{- if .Values.sabnzbd.enabled }}
 ---
 apiVersion: gateway.networking.k8s.io/v1

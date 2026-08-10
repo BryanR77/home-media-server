@@ -1,0 +1,93 @@
+{{- if .Values.bazarr.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "bazarr") }}
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "bazarr") | nindent 4 }}
+spec:
+  replicas: {{ .Values.bazarr.replicaCount }}
+  strategy:
+    {{- toYaml .Values.bazarr.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "bazarr") | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.bazarr.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "bazarr") | nindent 8 }}
+        {{- with .Values.bazarr.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "media-stack.serviceAccountName" (dict "root" . "app" "bazarr") }}
+      securityContext:
+        {{- toYaml .Values.bazarr.podSecurityContext | nindent 8 }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      containers:
+        - name: bazarr
+          securityContext:
+            {{- toYaml .Values.bazarr.securityContext | nindent 12 }}
+          image: "{{ .Values.bazarr.image.repository }}:{{ .Values.bazarr.image.tag }}"
+          imagePullPolicy: {{ .Values.bazarr.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ include "media-stack.timezone" . | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.bazarr.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.bazarr.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.bazarr.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.bazarr.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.bazarr.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            {{- if .Values.bazarr.persistence.media.enabled }}
+            - name: media
+              mountPath: /media
+            {{- end }}
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.bazarr.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "bazarr") }}-config
+        {{- if .Values.bazarr.persistence.media.enabled }}
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ .Values.bazarr.persistence.media.existingClaim }}
+        {{- end }}
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.bazarr.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.bazarr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.bazarr.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.bazarr.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

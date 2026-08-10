@@ -704,6 +704,116 @@ radarr:
   extraVolumes: []
   extraVolumeMounts: []
 
+# Bazarr - Subtitle Management for Sonarr/Radarr
+bazarr:
+  enabled: true
+
+  # Subdomain configuration
+  ingress:
+    enabled: true
+    subdomain: "bazarr"
+    basePath: ""
+
+  image:
+    repository: ghcr.io/home-operations/bazarr
+    tag: "1.6.0"
+    pullPolicy: Always
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
+    fsGroupChangePolicy: "OnRootMismatch"
+    seccompProfile:
+      type: RuntimeDefault
+    supplementalGroups: []
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    annotations: {}
+    type: ClusterIP
+    port: 6767
+    targetPort: 6767
+
+  persistence:
+    config:
+      enabled: true
+      storageClass: ""
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      annotations: {}
+
+    media:
+      enabled: true
+      existingClaim: "shared-media"
+      # Mounts the shared media PVC at /media
+      # Bazarr writes subtitles alongside media in /media/tv and /media/movies,
+      # and should point at Sonarr/Radarr via their in-cluster service DNS
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /ping
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /ping
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  startupProbe:
+    httpGet:
+      path: /ping
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  podLabels: {}
+  replicaCount: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  extraVolumes: []
+  extraVolumeMounts: []
+
 # SABnzbd - Download Client
 sabnzbd:
   enabled: true

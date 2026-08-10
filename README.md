@@ -2,7 +2,7 @@
 
 Helm chart and Argo CD manifests for running a full home media stack on Kubernetes.
 
-The chart name is `media-stack` (current chart version: `0.3.0`) and deploys a set of applications that share a common media library and unified routing.
+The chart name is `media-stack` (current chart version: `0.4.0`) and deploys a set of applications that share a common media library and unified routing.
 
 ## What This Deploys
 
@@ -12,6 +12,7 @@ Default enabled apps:
 - Sonarr (TV automation)
 - Radarr (movie automation)
 - Prowlarr (indexer manager)
+- Bazarr (subtitle management)
 - SABnzbd (download client)
 - Tautulli (Plex monitoring)
 - Seerr (media request management)
@@ -90,8 +91,8 @@ Two routing modes are supported:
 - Kubernetes Ingress (optional)
 
 Important behavior:
-- HTTPRoute templates exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, SABnzbd, Seerr, Tautulli, Stash, and Tdarr.
-- Ingress templates currently exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, SABnzbd, and Seerr.
+- HTTPRoute templates exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, Bazarr, SABnzbd, Seerr, Tautulli, Stash, and Tdarr.
+- Ingress templates currently exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, Bazarr, SABnzbd, and Seerr.
 - If you use Ingress-only mode and enable Tautulli, Stash, or Tdarr, no Ingress is currently rendered for those apps.
 
 Use only one routing mode at a time.
@@ -129,6 +130,7 @@ With defaults (`baseDomain: media.local`):
 - `prowlarr.media.local`
 - `sonarr.media.local`
 - `radarr.media.local`
+- `bazarr.media.local`
 - `sabnzbd.media.local`
 - `tautulli.media.local`
 - `seerr.media.local`
@@ -141,6 +143,7 @@ Shared library conventions:
 - SABnzbd downloads: `/media/downloads`
 - Sonarr library: `/media/tv`
 - Radarr library: `/media/movies`
+- Bazarr media mount: `/media` (writes subtitles alongside `/media/tv` and `/media/movies`)
 - Jellyfin library root: `/media`
 - Plex library root: `/data` (same shared PVC mounted at a different path)
 - Stash library root: `/data` (same shared PVC mounted at a different path; Stash-specific config/metadata/cache/blobs/generated dirs are dedicated PVCs)
@@ -189,6 +192,7 @@ Recommended initial app-side paths:
 4. Jellyfin libraries: `/media/tv`, `/media/movies`
 5. Plex libraries: `/data/tv`, `/data/movies`
 6. Seerr: sign in against Jellyfin/Plex/Emby, then connect Sonarr and Radarr via their in-cluster service DNS (e.g. `http://<release>-sonarr:8989`, `http://<release>-radarr:7878`)
+7. Bazarr: connect Sonarr and Radarr via their in-cluster service DNS (e.g. `http://<release>-sonarr:8989`, `http://<release>-radarr:7878`), then point its paths at `/media/tv` and `/media/movies` matching each app's root folder
 
 ## Notable Per-App Options
 
@@ -223,6 +227,7 @@ sonarr:
 - `ghcr.io/home-operations/prowlarr:2.3.3`
 - `ghcr.io/home-operations/sonarr:4.0.16`
 - `ghcr.io/home-operations/radarr:6.1.1`
+- `ghcr.io/home-operations/bazarr:1.6.0`
 - `ghcr.io/home-operations/sabnzbd:4.5.5`
 - `ghcr.io/home-operations/tautulli:2.16.1`
 - `ghcr.io/seerr-team/seerr:v3.4.1`

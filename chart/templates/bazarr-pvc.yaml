@@ -1,0 +1,31 @@
+{{- if .Values.bazarr.enabled }}
+{{- if .Values.bazarr.persistence.config.enabled }}
+{{- if not .Values.bazarr.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "bazarr") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "bazarr") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.bazarr.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.bazarr.persistence.config.accessMode }}
+  {{- if .Values.bazarr.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.bazarr.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.bazarr.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.bazarr.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- end }}

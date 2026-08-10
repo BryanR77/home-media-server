@@ -1,7 +1,7 @@
 apiVersion: v2
 name: media-stack
 description: A unified Helm chart for deploying a complete media automation stack (Jellyfin, Sonarr, Prowlarr, SABnzbd) with path-based routing and shared storage
-version: 0.3.1
+version: 0.4.0
 type: application
 keywords:
   - media
