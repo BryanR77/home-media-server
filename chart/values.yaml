@@ -826,7 +826,7 @@ sabnzbd:
   
   image:
     repository: ghcr.io/home-operations/sabnzbd
-    tag: "5.1.2"
+    tag: "5.1.3"
     pullPolicy: Always
 
   serviceAccount:
