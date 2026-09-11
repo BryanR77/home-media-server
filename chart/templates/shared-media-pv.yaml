@@ -6,6 +6,7 @@ metadata:
   labels:
     {{- include "media-stack.labels" . | nindent 4 }}
     app.kubernetes.io/component: shared-media
+    velero.io/exclude-from-backup: "true"
 spec:
   capacity:
     storage: {{ .Values.shared.media.size }}
