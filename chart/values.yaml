@@ -716,7 +716,7 @@ bazarr:
 
   image:
     repository: ghcr.io/home-operations/bazarr
-    tag: "1.6.1"
+    tag: "1.6.2"
     pullPolicy: Always
 
   serviceAccount:
