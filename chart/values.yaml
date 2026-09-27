@@ -1411,7 +1411,7 @@ tdarrNode:
 
   image:
     repository: haveagitgat/tdarr_node
-    tag: "2.90.01"
+    tag: "2.91.01"
     pullPolicy: IfNotPresent
 
   # User/group IDs for file ownership (passed as PUID/PGID to the container)
