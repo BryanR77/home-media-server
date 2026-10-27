@@ -717,7 +717,7 @@ whisparr:
   image:
     # Whisparr v3 is only published by hotio
     repository: ghcr.io/hotio/whisparr
-    tag: "v3-3.0.0.617"
+    tag: "v3-3.1.0.2116"
     pullPolicy: Always
 
   serviceAccount:
