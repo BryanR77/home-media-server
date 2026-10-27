@@ -230,7 +230,7 @@ sonarr:
 - `ghcr.io/home-operations/prowlarr:2.3.3`
 - `ghcr.io/home-operations/sonarr:4.0.16`
 - `ghcr.io/home-operations/radarr:6.1.1`
-- `ghcr.io/hotio/whisparr:v3-3.0.0.617`
+- `thespad/whisparr:v3.6.5-release.1886-spad61`
 - `ghcr.io/home-operations/bazarr:1.6.0`
 - `ghcr.io/home-operations/sabnzbd:4.5.5`
 - `ghcr.io/home-operations/tautulli:2.16.1`
@@ -253,7 +253,7 @@ Most app pods default to:
 - dropped Linux capabilities
 - `seccompProfile: RuntimeDefault`
 
-Tdarr server/node, Stash, and Whisparr are more permissive by default: Tdarr because of transcoding/runtime constraints, Stash because the upstream image runs as root with no PUID/PGID support, and Whisparr because the hotio v3 image starts as root (s6-overlay) before dropping to `PUID`/`PGID`.
+Tdarr server/node, Stash, and Whisparr are more permissive by default: Tdarr because of transcoding/runtime constraints, Stash because the upstream image runs as root with no PUID/PGID support, and Whisparr because the thespad v3 image (LinuxServer base) starts as root (s6-overlay) before dropping to `PUID`/`PGID`.
 
 ## Uninstall
 

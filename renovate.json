@@ -5,11 +5,12 @@
   ],
   "packageRules": [
     {
-      "description": "hotio Whisparr v3 tags (v3-3.0.0.617)",
+      "description": "thespad Whisparr v3 tags (v3.6.5-release.1886-spad61)",
       "matchPackageNames": [
-        "ghcr.io/hotio/whisparr"
+        "docker.io/thespad/whisparr",
+        "thespad/whisparr"
       ],
-      "versioning": "regex:^(?<compatibility>v3)-(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)\\.(?<build>\\d+)$"
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-release\\.(?<build>\\d+)-spad(?<revision>\\d+)$"
     }
   ]
 }
