@@ -1,0 +1,31 @@
+{{- if .Values.whisparr.enabled }}
+{{- if .Values.whisparr.persistence.config.enabled }}
+{{- if not .Values.whisparr.persistence.config.existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "whisparr") }}-config
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "whisparr") | nindent 4 }}
+    app.kubernetes.io/component: config
+  {{- with .Values.whisparr.persistence.config.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.whisparr.persistence.config.accessMode }}
+  {{- if .Values.whisparr.persistence.config.storageClass }}
+  {{- if (eq "-" .Values.whisparr.persistence.config.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.whisparr.persistence.config.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.whisparr.persistence.config.size }}
+{{- end }}
+{{- end }}
+{{- end }}

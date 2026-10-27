@@ -159,6 +159,38 @@ spec:
                 port:
                   number: {{ .Values.radarr.service.port }}
 {{- end }}
+{{- if and .Values.whisparr.enabled .Values.whisparr.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "whisparr") }}
+  labels:
+    {{- include "media-stack.labels" . | nindent 4 }}
+  {{- with .Values.global.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.global.ingress.className }}
+  ingressClassName: {{ .Values.global.ingress.className }}
+  {{- end }}
+  {{- if .Values.global.ingress.tls }}
+  tls:
+    {{- toYaml .Values.global.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.whisparr.ingress.subdomain }}.{{ .Values.global.baseDomain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "media-stack.appFullname" (dict "root" . "app" "whisparr") }}
+                port:
+                  number: {{ .Values.whisparr.service.port }}
+{{- end }}
 {{- if and .Values.bazarr.enabled .Values.bazarr.ingress.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
