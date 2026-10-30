@@ -478,11 +478,9 @@ prowlarr:
   podAnnotations: {}
   podLabels: {}
   replicaCount: 1
+  # Recreate so the RWO config volume is released before the new pod starts
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    type: Recreate
   extraVolumes: []
   extraVolumeMounts: []
 
@@ -587,11 +585,9 @@ sonarr:
   podAnnotations: {}
   podLabels: {}
   replicaCount: 1
+  # Recreate so the RWO config volume is released before the new pod starts
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    type: Recreate
   extraVolumes: []
   extraVolumeMounts: []
 
@@ -696,11 +692,9 @@ radarr:
   podAnnotations: {}
   podLabels: {}
   replicaCount: 1
+  # Recreate so the RWO config volume is released before the new pod starts
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    type: Recreate
   extraVolumes: []
   extraVolumeMounts: []
 
@@ -914,11 +908,9 @@ bazarr:
   podAnnotations: {}
   podLabels: {}
   replicaCount: 1
+  # Recreate so the RWO config volume is released before the new pod starts
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    type: Recreate
   extraVolumes: []
   extraVolumeMounts: []
 
