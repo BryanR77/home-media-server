@@ -711,7 +711,7 @@ whisparr:
   image:
     # Whisparr v3 build from thespad (LinuxServer base image)
     repository: docker.io/thespad/whisparr
-    tag: "v3.6.5-release.1886-spad61"
+    tag: "v3.6.5-release.1886-spad62"
     pullPolicy: Always
 
   serviceAccount:
