@@ -136,8 +136,7 @@ spec:
             claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}-config
         {{- if .Values.plex.persistence.media.enabled }}
         - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Values.plex.persistence.media.existingClaim }}
+          {{- include "media-stack.mediaVolumeSource" .Values.plex.persistence.media | nindent 10 }}
         {{- end }}
         - name: transcode
           emptyDir: {}

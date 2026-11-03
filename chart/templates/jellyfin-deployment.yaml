@@ -127,8 +127,7 @@ spec:
             claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "jellyfin") }}-config
         {{- if .Values.jellyfin.persistence.media.enabled }}
         - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Values.jellyfin.persistence.media.existingClaim }}
+          {{- include "media-stack.mediaVolumeSource" .Values.jellyfin.persistence.media | nindent 10 }}
         {{- end }}
         - name: cache
           emptyDir: {}

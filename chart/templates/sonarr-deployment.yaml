@@ -109,8 +109,7 @@ spec:
             claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "sonarr") }}-config
         {{- if .Values.sonarr.persistence.media.enabled }}
         - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Values.sonarr.persistence.media.existingClaim }}
+          {{- include "media-stack.mediaVolumeSource" .Values.sonarr.persistence.media | nindent 10 }}
         {{- end }}
         - name: tmp
           emptyDir: {}

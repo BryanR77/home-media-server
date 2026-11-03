@@ -100,8 +100,7 @@ spec:
       volumes:
         {{- if .Values.tdarrNode.persistence.media.enabled }}
         - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Values.tdarrNode.persistence.media.existingClaim }}
+          {{- include "media-stack.mediaVolumeSource" .Values.tdarrNode.persistence.media | nindent 10 }}
         {{- end }}
         - name: cache
           {{- if .Values.tdarrNode.persistence.cache.enabled }}

@@ -112,8 +112,7 @@ spec:
             claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "whisparr") }}-config
         {{- if .Values.whisparr.persistence.media.enabled }}
         - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Values.whisparr.persistence.media.existingClaim }}
+          {{- include "media-stack.mediaVolumeSource" .Values.whisparr.persistence.media | nindent 10 }}
         {{- end }}
         - name: tmp
           emptyDir: {}

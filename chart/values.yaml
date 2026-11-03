@@ -161,6 +161,9 @@ jellyfin:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounts the shared media PVC at /media
 
   resources:
@@ -333,6 +336,9 @@ plex:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounts the shared media PVC at /data
       # In Plex, add libraries pointing to /data/movies, /data/tv, /data/music
 
@@ -541,6 +547,9 @@ sonarr:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounts the shared media PVC at /media
       # Sonarr will use /media/downloads for processing and /media/tv for library
 
@@ -648,6 +657,9 @@ radarr:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounts the shared media PVC at /media
       # Radarr will use /media/downloads for processing and /media/movies for library
 
@@ -756,6 +768,9 @@ whisparr:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounts the shared media PVC at /media
       # Whisparr will use /media/downloads for processing and /media/adult for library
 
@@ -863,6 +878,9 @@ bazarr:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounts the shared media PVC at /media
       # Bazarr writes subtitles alongside media in /media/tv and /media/movies,
       # and should point at Sonarr/Radarr via their in-cluster service DNS
@@ -974,6 +992,9 @@ sabnzbd:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounts the shared media PVC at /media
       # SABnzbd will download to /media/downloads
 
@@ -1331,6 +1352,9 @@ stash:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounted at /data - point Stash's library at /data/<subfolder>
 
   resources:
@@ -1440,6 +1464,9 @@ tdarr:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounted at /media so the server can scan libraries and dispatch work to nodes
 
     # Shared transcode cache mounted at /temp on both the server and tdarrNode pods.
@@ -1586,6 +1613,9 @@ tdarrNode:
     media:
       enabled: true
       existingClaim: "shared-media"
+      # Optional node-local path (e.g. virtiofs mount) used instead of the shared PVC.
+      # The pod must be pinned via nodeSelector to a node where this path exists.
+      hostPath: ""
       # Mounted at /media inside the container; point Tdarr libraries here
 
     # Transcode cache mounted at /temp. Shares the PVC created by tdarr.persistence.cache

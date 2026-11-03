@@ -70,8 +70,7 @@ spec:
             claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "bazarr") }}-config
         {{- if .Values.bazarr.persistence.media.enabled }}
         - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Values.bazarr.persistence.media.existingClaim }}
+          {{- include "media-stack.mediaVolumeSource" .Values.bazarr.persistence.media | nindent 10 }}
         {{- end }}
         - name: tmp
           emptyDir: {}

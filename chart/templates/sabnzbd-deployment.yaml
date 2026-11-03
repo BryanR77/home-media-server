@@ -78,8 +78,7 @@ spec:
             claimName: {{ include "media-stack.appFullname" (dict "root" . "app" "sabnzbd") }}-config
         {{- if .Values.sabnzbd.persistence.media.enabled }}
         - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Values.sabnzbd.persistence.media.existingClaim }}
+          {{- include "media-stack.mediaVolumeSource" .Values.sabnzbd.persistence.media | nindent 10 }}
         {{- end }}
         - name: tmp
           emptyDir: {}

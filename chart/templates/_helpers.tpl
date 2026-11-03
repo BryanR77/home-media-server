@@ -104,3 +104,20 @@ Get timezone from global or default
 {{- define "media-stack.timezone" -}}
 {{- .Values.global.timezone | default "UTC" }}
 {{- end }}
+
+{{/*
+Volume source for an app's shared media mount.
+Pass the app's persistence.media values. When hostPath is set (e.g. a virtiofs
+mount on a specific node), it is used instead of the shared PVC. The pod must
+be pinned (nodeSelector/affinity) to a node where that path exists.
+*/}}
+{{- define "media-stack.mediaVolumeSource" -}}
+{{- if .hostPath -}}
+hostPath:
+  path: {{ .hostPath | quote }}
+  type: Directory
+{{- else -}}
+persistentVolumeClaim:
+  claimName: {{ .existingClaim }}
+{{- end }}
+{{- end }}

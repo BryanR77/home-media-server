@@ -117,8 +117,7 @@ spec:
         {{- end }}
         {{- if .Values.stash.persistence.media.enabled }}
         - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Values.stash.persistence.media.existingClaim }}
+          {{- include "media-stack.mediaVolumeSource" .Values.stash.persistence.media | nindent 10 }}
         {{- end }}
         {{- with .Values.stash.extraVolumes }}
         {{- toYaml . | nindent 8 }}

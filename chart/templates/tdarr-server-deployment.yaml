@@ -109,8 +109,7 @@ spec:
         {{- end }}
         {{- if .Values.tdarr.persistence.media.enabled }}
         - name: media
-          persistentVolumeClaim:
-            claimName: {{ .Values.tdarr.persistence.media.existingClaim }}
+          {{- include "media-stack.mediaVolumeSource" .Values.tdarr.persistence.media | nindent 10 }}
         {{- end }}
         {{- with .Values.tdarr.extraVolumes }}
         {{- toYaml . | nindent 8 }}
