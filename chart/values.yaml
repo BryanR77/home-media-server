@@ -1390,7 +1390,7 @@ tdarr:
 
   image:
     repository: haveagitgat/tdarr
-    tag: "3.04.00"
+    tag: "3.06.00"
     pullPolicy: IfNotPresent
 
   # User/group IDs for file ownership (passed as PUID/PGID to the container)
