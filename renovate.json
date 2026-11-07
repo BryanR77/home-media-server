@@ -2,15 +2,5 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
-  ],
-  "packageRules": [
-    {
-      "description": "thespad Whisparr v3 tags (v3.6.5-release.1886-spad61)",
-      "matchPackageNames": [
-        "docker.io/thespad/whisparr",
-        "thespad/whisparr"
-      ],
-      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-release\\.(?<build>\\d+)-spad(?<revision>\\d+)$"
-    }
   ]
 }

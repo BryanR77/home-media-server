@@ -11,13 +11,11 @@ Default enabled apps:
 - Plex (media server)
 - Sonarr (TV automation)
 - Radarr (movie automation)
-- Whisparr (adult content automation)
 - Prowlarr (indexer manager)
 - Bazarr (subtitle management)
 - SABnzbd (download client)
 - Tautulli (Plex monitoring)
 - Seerr (media request management)
-- Stash (media organizer/tagger)
 
 Optional apps:
 - Tdarr server (automated transcoding orchestration)
@@ -92,9 +90,9 @@ Two routing modes are supported:
 - Kubernetes Ingress (optional)
 
 Important behavior:
-- HTTPRoute templates exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, Whisparr, Bazarr, SABnzbd, Seerr, Tautulli, Stash, and Tdarr.
-- Ingress templates currently exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, Whisparr, Bazarr, SABnzbd, and Seerr.
-- If you use Ingress-only mode and enable Tautulli, Stash, or Tdarr, no Ingress is currently rendered for those apps.
+- HTTPRoute templates exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, Bazarr, SABnzbd, Seerr, Tautulli, and Tdarr.
+- Ingress templates currently exist for Jellyfin, Plex, Prowlarr, Sonarr, Radarr, Bazarr, SABnzbd, and Seerr.
+- If you use Ingress-only mode and enable Tautulli or Tdarr, no Ingress is currently rendered for those apps.
 
 Use only one routing mode at a time.
 
@@ -131,12 +129,10 @@ With defaults (`baseDomain: media.local`):
 - `prowlarr.media.local`
 - `sonarr.media.local`
 - `radarr.media.local`
-- `whisparr.media.local`
 - `bazarr.media.local`
 - `sabnzbd.media.local`
 - `tautulli.media.local`
 - `seerr.media.local`
-- `stash.media.local`
 - `tdarr.media.local` (when enabled)
 
 ### Storage Paths Used by Apps
@@ -145,11 +141,9 @@ Shared library conventions:
 - SABnzbd downloads: `/media/downloads`
 - Sonarr library: `/media/tv`
 - Radarr library: `/media/movies`
-- Whisparr library: `/media/adult`
 - Bazarr media mount: `/media` (writes subtitles alongside `/media/tv` and `/media/movies`)
 - Jellyfin library root: `/media`
 - Plex library root: `/data` (same shared PVC mounted at a different path)
-- Stash library root: `/data` (same shared PVC mounted at a different path; Stash-specific config/metadata/cache/blobs/generated dirs are dedicated PVCs)
 - Tdarr server/node media mount: `/media`
 - Tdarr transcode cache: `/temp`
 
@@ -191,7 +185,7 @@ Recommended initial app-side paths:
    - Temporary: `/media/downloads/incomplete`
    - Completed: `/media/downloads/complete`
 2. Sonarr root folder: `/media/tv`
-3. Radarr root folder: `/media/movies`; Whisparr root folder: `/media/adult`
+3. Radarr root folder: `/media/movies`
 4. Jellyfin libraries: `/media/tv`, `/media/movies`
 5. Plex libraries: `/data/tv`, `/data/movies`
 6. Seerr: sign in against Jellyfin/Plex/Emby, then connect Sonarr and Radarr via their in-cluster service DNS (e.g. `http://<release>-sonarr:8989`, `http://<release>-radarr:7878`)
@@ -230,12 +224,10 @@ sonarr:
 - `ghcr.io/home-operations/prowlarr:2.3.3`
 - `ghcr.io/home-operations/sonarr:4.0.16`
 - `ghcr.io/home-operations/radarr:6.1.1`
-- `thespad/whisparr:v3.6.5-release.1886-spad61`
 - `ghcr.io/home-operations/bazarr:1.6.0`
 - `ghcr.io/home-operations/sabnzbd:4.5.5`
 - `ghcr.io/home-operations/tautulli:2.16.1`
 - `ghcr.io/seerr-team/seerr:v3.4.1`
-- `stashapp/stash:latest`
 - `haveagitgat/tdarr:2.62.01`
 - `haveagitgat/tdarr_node:2.62.01`
 
@@ -253,7 +245,7 @@ Most app pods default to:
 - dropped Linux capabilities
 - `seccompProfile: RuntimeDefault`
 
-Tdarr server/node, Stash, and Whisparr are more permissive by default: Tdarr because of transcoding/runtime constraints, Stash because the upstream image runs as root with no PUID/PGID support, and Whisparr because the thespad v3 image (LinuxServer base) starts as root (s6-overlay) before dropping to `PUID`/`PGID`.
+Tdarr server/node are more permissive by default because of transcoding/runtime constraints.
 
 ## Uninstall
 
