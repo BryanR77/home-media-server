@@ -1,0 +1,26 @@
+{{- if and .Values.plex.enabled .Values.plex.lanService.enabled }}
+# Optional LoadBalancer Service that exposes Plex directly on the LAN.
+# LAN clients that connect here keep their real source IP (with
+# externalTrafficPolicy: Local), so Plex treats them as local instead of
+# seeing every client as the gateway's pod IP and applying remote limits.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "media-stack.appFullname" (dict "root" . "app" "plex") }}-lan
+  labels:
+    {{- include "media-stack.appLabels" (dict "root" . "app" "plex") | nindent 4 }}
+  {{- with .Values.plex.lanService.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: {{ .Values.plex.lanService.externalTrafficPolicy }}
+  ports:
+    - port: {{ .Values.plex.lanService.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "media-stack.appSelectorLabels" (dict "root" . "app" "plex") | nindent 4 }}
+{{- end }}

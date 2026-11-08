@@ -267,7 +267,16 @@ plex:
     type: ClusterIP
     port: 32400
     targetPort: 32400
-  
+
+  # Optional extra LoadBalancer Service for direct LAN access (see
+  # templates/plex-lan-service.yaml). Use annotations to request a fixed IP,
+  # e.g. lbipam.cilium.io/ips: "192.168.42.248" with Cilium LB IPAM.
+  lanService:
+    enabled: false
+    port: 32400
+    externalTrafficPolicy: Local
+    annotations: {}
+
   # Hardware acceleration configuration
   hardwareAcceleration:
     # Intel Quick Sync (requires /dev/dri device)
